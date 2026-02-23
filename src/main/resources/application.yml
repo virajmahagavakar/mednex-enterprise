@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: mednex-enterprise
+    
+  # Master Database is the default spring datasource
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mednex_master_db
+    username: postgres
+    password: password # Replace with your local postgres password
+    driver-class-name: org.postgresql.Driver
+
+  # Custom configurations to ensure we don't automatically override manual Beans
+      
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # We will manually configure flyway to run against Master and Tenants
+  flyway:
+    enabled: false 
+    
+server:
+  port: 8080
