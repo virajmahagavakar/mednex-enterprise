@@ -74,9 +74,14 @@ public class AuthService {
                     .collect(Collectors.toList());
             extraClaims.put("permissions", permissions);
 
+            List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities = user.getRoles()
+                    .stream()
+                    .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(role.getName()))
+                    .collect(Collectors.toList());
+
             // Using default implementation of UserDetails to leverage JWT generation
             org.springframework.security.core.userdetails.User userDetails = new org.springframework.security.core.userdetails.User(
-                    user.getEmail(), user.getPassword(), java.util.Collections.emptyList());
+                    user.getEmail(), user.getPassword(), authorities);
 
             String jwtToken = jwtService.generateToken(userDetails, extraClaims);
 

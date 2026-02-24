@@ -2,6 +2,7 @@ package com.mednex.mednex_enterprise.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -18,12 +19,7 @@ import java.util.Map;
 
 @Configuration
 @EnableTransactionManagement
-@EnableJpaRepositories(
-        basePackages = "com.mednex.mednex_enterprise",
-        excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.mednex\\.mednex_enterprise\\.multitenancy\\.master\\..*"),
-        entityManagerFactoryRef = "tenantEntityManagerFactory",
-        transactionManagerRef = "tenantTransactionManager"
-)
+@EnableJpaRepositories(basePackages = "com.mednex.mednex_enterprise", excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.mednex\\.mednex_enterprise\\.multitenancy\\.master\\..*"), entityManagerFactoryRef = "tenantEntityManagerFactory", transactionManagerRef = "tenantTransactionManager")
 public class TenantJpaConfig {
 
     @Bean
@@ -32,9 +28,10 @@ public class TenantJpaConfig {
 
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
-        
+
         // Scan all other packages, excluding master if needed.
-        // It's acceptable for the tenant EM to scan all entities, but repositories must be isolated.
+        // It's acceptable for the tenant EM to scan all entities, but repositories must
+        // be isolated.
         em.setPackagesToScan("com.mednex.mednex_enterprise");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
@@ -46,12 +43,15 @@ public class TenantJpaConfig {
         properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         properties.put("hibernate.show_sql", "true");
         properties.put("hibernate.format_sql", "true");
+        properties.put("hibernate.physical_naming_strategy",
+                "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy");
 
         em.setJpaPropertyMap(properties);
 
         return em;
     }
 
+    @Primary
     @Bean
     public PlatformTransactionManager tenantTransactionManager(
             @Qualifier("tenantEntityManagerFactory") LocalContainerEntityManagerFactoryBean tenantEntityManagerFactory) {

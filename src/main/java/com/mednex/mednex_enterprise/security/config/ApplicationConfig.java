@@ -23,10 +23,17 @@ public class ApplicationConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> userRepository.findByEmail(username)
-                .map(user -> new org.springframework.security.core.userdetails.User(
-                        user.getEmail(),
-                        user.getPassword(),
-                        java.util.Collections.emptyList()))
+                .map(user -> {
+                    java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities = user
+                            .getRoles().stream()
+                            .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                    role.getName()))
+                            .collect(java.util.stream.Collectors.toList());
+                    return new org.springframework.security.core.userdetails.User(
+                            user.getEmail(),
+                            user.getPassword(),
+                            authorities);
+                })
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
