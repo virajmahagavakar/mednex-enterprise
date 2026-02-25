@@ -8,3 +8,4 @@ public class AuthRequest {
     private String password;
     private String hospitalId; // To identify the tenant context
 }
+

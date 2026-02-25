@@ -26,3 +26,4 @@ public class MasterFlywayConfig {
         flyway.migrate();
     }
 }
+

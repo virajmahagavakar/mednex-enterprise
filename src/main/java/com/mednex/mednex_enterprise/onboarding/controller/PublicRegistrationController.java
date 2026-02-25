@@ -1,7 +1,7 @@
-package com.mednex.mednex_enterprise.tenant.controller;
+package com.mednex.mednex_enterprise.onboarding.controller;
 
-import com.mednex.mednex_enterprise.tenant.dto.HospitalRegistrationRequest;
-import com.mednex.mednex_enterprise.tenant.service.TenantProvisioningService;
+import com.mednex.mednex_enterprise.onboarding.dto.HospitalRegistrationRequest;
+import com.mednex.mednex_enterprise.onboarding.service.TenantProvisioningService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,3 +38,4 @@ public class PublicRegistrationController {
         }
     }
 }
+

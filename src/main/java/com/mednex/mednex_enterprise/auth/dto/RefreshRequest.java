@@ -7,3 +7,4 @@ public class RefreshRequest {
     private String refreshToken;
     private String hospitalId;
 }
+

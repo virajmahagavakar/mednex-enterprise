@@ -1,7 +1,7 @@
-package com.mednex.mednex_enterprise.tenant.repository;
+package com.mednex.mednex_enterprise.auth.repository;
 
-import com.mednex.mednex_enterprise.tenant.entity.RefreshToken;
-import com.mednex.mednex_enterprise.tenant.entity.User;
+import com.mednex.mednex_enterprise.auth.entity.RefreshToken;
+import com.mednex.mednex_enterprise.core.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 
@@ -13,3 +13,4 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Modifying
     int deleteByUser(User user);
 }
+

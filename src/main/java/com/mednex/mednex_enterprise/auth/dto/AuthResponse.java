@@ -12,3 +12,4 @@ public class AuthResponse {
     private String refreshToken;
     private String hospitalId;
 }
+

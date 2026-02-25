@@ -1,7 +1,7 @@
 package com.mednex.mednex_enterprise.security.config;
 
-import com.mednex.mednex_enterprise.tenant.repository.UserRepository;
-import com.mednex.mednex_enterprise.tenant.entity.User;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
+import com.mednex.mednex_enterprise.core.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,3 +54,4 @@ public class ApplicationConfig {
         return new BCryptPasswordEncoder();
     }
 }
+

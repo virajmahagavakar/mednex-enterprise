@@ -1,8 +1,8 @@
-package com.mednex.mednex_enterprise.tenant.controller;
+package com.mednex.mednex_enterprise.admin.controller;
 
-import com.mednex.mednex_enterprise.tenant.dto.BranchRequest;
-import com.mednex.mednex_enterprise.tenant.dto.BranchResponse;
-import com.mednex.mednex_enterprise.tenant.service.BranchService;
+import com.mednex.mednex_enterprise.admin.dto.BranchRequest;
+import com.mednex.mednex_enterprise.admin.dto.BranchResponse;
+import com.mednex.mednex_enterprise.admin.service.BranchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,3 +32,4 @@ public class BranchController {
         return ResponseEntity.ok(branchService.getAllBranches());
     }
 }
+

@@ -1,15 +1,15 @@
-package com.mednex.mednex_enterprise.tenant.service;
+package com.mednex.mednex_enterprise.onboarding.service;
 
 import com.mednex.mednex_enterprise.multitenancy.master.Tenant;
 import com.mednex.mednex_enterprise.multitenancy.master.TenantRepository;
 import com.mednex.mednex_enterprise.multitenancy.context.TenantContext;
-import com.mednex.mednex_enterprise.tenant.dto.HospitalRegistrationRequest;
-import com.mednex.mednex_enterprise.tenant.entity.Branch;
-import com.mednex.mednex_enterprise.tenant.entity.Role;
-import com.mednex.mednex_enterprise.tenant.entity.User;
-import com.mednex.mednex_enterprise.tenant.repository.BranchRepository;
-import com.mednex.mednex_enterprise.tenant.repository.RoleRepository;
-import com.mednex.mednex_enterprise.tenant.repository.UserRepository;
+import com.mednex.mednex_enterprise.onboarding.dto.HospitalRegistrationRequest;
+import com.mednex.mednex_enterprise.core.entity.Branch;
+import com.mednex.mednex_enterprise.core.entity.Role;
+import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.core.repository.BranchRepository;
+import com.mednex.mednex_enterprise.core.repository.RoleRepository;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
 import org.flywaydb.core.Flyway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -170,3 +170,4 @@ public class TenantProvisioningService {
         return hospitalName.toLowerCase().replaceAll("[^a-z0-9]", "_") + "_" + System.currentTimeMillis() % 10000;
     }
 }
+

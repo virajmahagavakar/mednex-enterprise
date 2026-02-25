@@ -6,8 +6,8 @@ import com.mednex.mednex_enterprise.multitenancy.context.TenantContext;
 import com.mednex.mednex_enterprise.multitenancy.master.Tenant;
 import com.mednex.mednex_enterprise.multitenancy.master.TenantRepository;
 import com.mednex.mednex_enterprise.security.service.JwtService;
-import com.mednex.mednex_enterprise.tenant.entity.User;
-import com.mednex.mednex_enterprise.tenant.repository.UserRepository;
+import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -107,7 +107,7 @@ public class AuthService {
 
             return refreshTokenService.findByToken(request.getRefreshToken())
                     .map(refreshTokenService::verifyExpiration)
-                    .map(com.mednex.mednex_enterprise.tenant.entity.RefreshToken::getUser)
+                    .map(com.mednex.mednex_enterprise.auth.entity.RefreshToken::getUser)
                     .map(user -> {
                         // Generate extra claims specifically as done in login
                         Map<String, Object> extraClaims = new HashMap<>();

@@ -1,4 +1,4 @@
-package com.mednex.mednex_enterprise.tenant.dto;
+package com.mednex.mednex_enterprise.admin.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -19,3 +19,4 @@ public class BranchRequest {
 
     private String address;
 }
+

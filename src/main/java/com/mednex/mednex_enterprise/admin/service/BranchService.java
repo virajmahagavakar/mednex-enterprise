@@ -1,9 +1,9 @@
-package com.mednex.mednex_enterprise.tenant.service;
+package com.mednex.mednex_enterprise.admin.service;
 
-import com.mednex.mednex_enterprise.tenant.dto.BranchRequest;
-import com.mednex.mednex_enterprise.tenant.dto.BranchResponse;
-import com.mednex.mednex_enterprise.tenant.entity.Branch;
-import com.mednex.mednex_enterprise.tenant.repository.BranchRepository;
+import com.mednex.mednex_enterprise.admin.dto.BranchRequest;
+import com.mednex.mednex_enterprise.admin.dto.BranchResponse;
+import com.mednex.mednex_enterprise.core.entity.Branch;
+import com.mednex.mednex_enterprise.core.repository.BranchRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,3 +52,4 @@ public class BranchService {
                 .build();
     }
 }
+

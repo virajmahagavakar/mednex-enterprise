@@ -37,3 +37,4 @@ public class Tenant {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
+

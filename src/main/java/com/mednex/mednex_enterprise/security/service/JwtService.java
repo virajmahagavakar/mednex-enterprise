@@ -89,3 +89,4 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get("hospital_id", String.class));
     }
 }
+

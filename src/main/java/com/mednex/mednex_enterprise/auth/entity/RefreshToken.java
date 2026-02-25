@@ -1,5 +1,6 @@
-package com.mednex.mednex_enterprise.tenant.entity;
+package com.mednex.mednex_enterprise.auth.entity;
 
+import com.mednex.mednex_enterprise.core.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

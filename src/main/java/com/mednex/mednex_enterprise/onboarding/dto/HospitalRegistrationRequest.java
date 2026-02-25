@@ -1,4 +1,4 @@
-package com.mednex.mednex_enterprise.tenant.dto;
+package com.mednex.mednex_enterprise.onboarding.dto;
 
 import lombok.Data;
 
@@ -13,3 +13,4 @@ public class HospitalRegistrationRequest {
     private String password;
     private String subscriptionPlan;
 }
+

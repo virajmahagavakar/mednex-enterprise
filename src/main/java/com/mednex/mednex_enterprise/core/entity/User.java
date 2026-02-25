@@ -1,4 +1,4 @@
-package com.mednex.mednex_enterprise.tenant.entity;
+package com.mednex.mednex_enterprise.core.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -63,3 +63,4 @@ public class User {
         updatedAt = LocalDateTime.now();
     }
 }
+

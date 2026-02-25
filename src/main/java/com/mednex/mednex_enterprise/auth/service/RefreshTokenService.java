@@ -1,9 +1,9 @@
 package com.mednex.mednex_enterprise.auth.service;
 
 import com.mednex.mednex_enterprise.security.service.JwtService;
-import com.mednex.mednex_enterprise.tenant.entity.RefreshToken;
-import com.mednex.mednex_enterprise.tenant.repository.RefreshTokenRepository;
-import com.mednex.mednex_enterprise.tenant.repository.UserRepository;
+import com.mednex.mednex_enterprise.auth.entity.RefreshToken;
+import com.mednex.mednex_enterprise.auth.repository.RefreshTokenRepository;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.User;
@@ -65,3 +65,4 @@ public class RefreshTokenService {
         return refreshTokenRepository.deleteByUser(userRepository.findById(userId).get());
     }
 }
+
