@@ -10,6 +10,10 @@ CREATE TABLE tenants (
     
     hospital_name VARCHAR(255) NOT NULL,
     subscription_plan VARCHAR(50) NOT NULL,
+    subscription_duration VARCHAR(50) NOT NULL,
+    subscription_end_date TIMESTAMP,
+    subscription_cost NUMERIC(10, 2),
+    parent_tenant_id VARCHAR(255),
     active BOOLEAN DEFAULT TRUE,
 
     license_number VARCHAR(255),

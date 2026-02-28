@@ -75,7 +75,27 @@ public class TenantProvisioningService {
         // 4. Run Flyway Migrations for the new Tenant DB
         runFlywayMigrations(newTenantDbUrl, dbUsername, dbPassword);
 
-        // 5. Store Tenant in Master DB
+        // 5. Calculate Subscription Cost and Expiry
+        double baseCost = 0.0;
+        LocalDateTime endDate = LocalDateTime.now();
+        if ("YEARLY".equalsIgnoreCase(request.getSubscriptionDuration())) {
+            baseCost = 1000.0;
+            endDate = LocalDateTime.now().plusYears(1);
+        } else { // Default to MONTHLY
+            baseCost = 100.0;
+            endDate = LocalDateTime.now().plusMonths(1);
+        }
+
+        double finalCost = baseCost;
+        if (request.getParentTenantId() != null && !request.getParentTenantId().isBlank()) {
+            if (tenantRepository.existsById(request.getParentTenantId())) {
+                finalCost = baseCost * 0.70; // 30% Sub-Branch Discount
+            } else {
+                throw new IllegalArgumentException("Invalid Parent Tenant ID provided.");
+            }
+        }
+
+        // 6. Store Tenant in Master DB
         Tenant tenant = Tenant.builder()
                 .tenantId(tenantId)
                 .dbName(dbName)
@@ -84,6 +104,12 @@ public class TenantProvisioningService {
                 .dbPassword(dbPassword)
                 .hospitalName(request.getHospitalName())
                 .subscriptionPlan(request.getSubscriptionPlan())
+                .subscriptionDuration(
+                        request.getSubscriptionDuration() != null ? request.getSubscriptionDuration().toUpperCase()
+                                : "MONTHLY")
+                .subscriptionEndDate(endDate)
+                .subscriptionCost(finalCost)
+                .parentTenantId(request.getParentTenantId())
                 .active(true)
                 .licenseNumber(request.getLicenseNumber())
                 .countryState(request.getCountryState())
@@ -170,4 +196,3 @@ public class TenantProvisioningService {
         return hospitalName.toLowerCase().replaceAll("[^a-z0-9]", "_") + "_" + System.currentTimeMillis() % 10000;
     }
 }
-

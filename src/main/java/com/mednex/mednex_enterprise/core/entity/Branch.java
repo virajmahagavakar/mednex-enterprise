@@ -27,6 +27,18 @@ public class Branch {
 
     private String address;
 
+    @Column(name = "subscription_plan")
+    private String subscriptionPlan;
+
+    @Column(name = "subscription_duration")
+    private String subscriptionDuration;
+
+    @Column(name = "subscription_end_date")
+    private LocalDateTime subscriptionEndDate;
+
+    @Column(name = "subscription_cost")
+    private Double subscriptionCost;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
@@ -45,4 +57,3 @@ public class Branch {
         updatedAt = LocalDateTime.now();
     }
 }
-

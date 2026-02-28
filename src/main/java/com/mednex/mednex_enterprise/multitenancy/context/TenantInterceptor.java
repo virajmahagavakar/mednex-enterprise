@@ -17,11 +17,6 @@ public class TenantInterceptor implements HandlerInterceptor {
         String tenantId = request.getHeader(TENANT_HEADER);
         if (tenantId != null && !tenantId.isEmpty()) {
             TenantContext.setCurrentTenant(tenantId);
-        } else {
-            // For now, if no tenant is specified, we might want to default to something
-            // or just let it be null. With DB per tenant, this usually means they
-            // are hitting a master/public endpoint.
-            TenantContext.clear();
         }
         return true;
     }
@@ -38,4 +33,3 @@ public class TenantInterceptor implements HandlerInterceptor {
         TenantContext.clear();
     }
 }
-

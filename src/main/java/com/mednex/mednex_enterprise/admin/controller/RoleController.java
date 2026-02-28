@@ -19,7 +19,7 @@ public class RoleController {
     private final RoleService roleService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('HOSPITAL_ADMIN', 'BRANCH_ADMIN')")
+    @PreAuthorize("hasAuthority('HOSPITAL_ADMIN') or hasAuthority('BRANCH_ADMIN') or hasAuthority('ROLE_HOSPITAL_ADMIN')")
     public ResponseEntity<List<RoleResponse>> getAllRoles() {
         return ResponseEntity.ok(roleService.getAllRoles());
     }

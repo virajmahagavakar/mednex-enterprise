@@ -45,23 +45,18 @@ public class StaffService {
         User currentAdmin = userRepository.findByEmail(currentAdminEmail)
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
 
-        // 3. Security Check: The current admin can only assign staff to branches they
-        // belong to,
-        // unless they are a Super Admin or have a global role (For now, check if
-        // requested branches are subset of admin's branches)
-        boolean isHospitalAdmin = currentAdmin.getRoles().stream().anyMatch(r -> r.getName().equals("HOSPITAL_ADMIN"));
-
+        // 3. Security Check: Admin can only assign staff to branches they belong to.
+        // Even HOSPITAL_ADMIN should only assign staff to their actual assigned
+        // branches (Main Branch).
         Set<UUID> adminBranchIds = currentAdmin.getBranches().stream().map(Branch::getId).collect(Collectors.toSet());
         if (currentAdmin.getPrimaryBranch() != null) {
             adminBranchIds.add(currentAdmin.getPrimaryBranch().getId());
         }
 
-        if (!isHospitalAdmin) {
-            for (UUID requestedBranchId : request.getBranches()) {
-                if (!adminBranchIds.contains(requestedBranchId)) {
-                    throw new SecurityException(
-                            "You do not have permission to assign staff to branch: " + requestedBranchId);
-                }
+        for (UUID requestedBranchId : request.getBranches()) {
+            if (!adminBranchIds.contains(requestedBranchId)) {
+                throw new SecurityException(
+                        "You do not have permission to assign staff to branch: " + requestedBranchId);
             }
         }
 
