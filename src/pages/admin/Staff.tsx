@@ -115,45 +115,47 @@ const Staff = () => {
               </tr>
             </thead>
             <tbody>
-              {staff.map(person => (
-                <tr key={person.id}>
-                  <td>
-                    <div className="person-info">
-                      <div className="avatar-sm">
-                        {person.name.charAt(0)}
+              {staff
+                .filter(person => !person.roles?.some(role => role?.name?.includes('ADMIN')))
+                .map(person => (
+                  <tr key={person.id}>
+                    <td>
+                      <div className="person-info">
+                        <div className="avatar-sm">
+                          {person.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="person-name">{person.name}</div>
+                          <div className="person-email">{person.email}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="person-name">{person.name}</div>
-                        <div className="person-email">{person.email}</div>
+                    </td>
+                    <td>
+                      <div className="role-tags">
+                        {person.roles.map(role => (
+                          <span key={role.id} className="role-tag">
+                            <Shield size={12} />
+                            {role.name}
+                          </span>
+                        ))}
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="role-tags">
-                      {person.roles.map(role => (
-                        <span key={role.id} className="role-tag">
-                          <Shield size={12} />
-                          {role.name}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="branch-info">
-                      <Building2 size={16} color="var(--text-tertiary)" />
-                      <span>City Central</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status-dot ${person.status.toLowerCase()}`}>
-                      {person.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="btn-link">Edit Profile</button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <div className="branch-info">
+                        <Building2 size={16} color="var(--text-tertiary)" />
+                        <span style={{ color: 'var(--text-secondary)' }}>Branch</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-dot ${(person.status || 'unknown').toLowerCase()}`}>
+                        {person.status || 'UNKNOWN'}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="btn-link">Edit Profile</button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         )}
@@ -210,7 +212,7 @@ const Staff = () => {
                   <div className="input-group">
                     <label>Assign Roles *</label>
                     <div className="role-checkboxes">
-                      {roles.map(role => (
+                      {roles.filter(r => !r?.name?.includes('ADMIN')).map(role => (
                         <label key={role.id} className="role-checkbox-label">
                           <input type="checkbox" checked={formData.roleIds.includes(role.id)} onChange={() => handleRoleToggle(role.id)} />
                           <div className="role-card-content">
@@ -443,6 +445,59 @@ const Staff = () => {
           
           .btn-link:hover {
             text-decoration: underline;
+          }
+          
+          /* Modal Form Grid Fixes */
+          .form-section {
+            margin-bottom: 1.5rem;
+          }
+          
+          .section-title {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0.5rem;
+          }
+          
+          .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+          }
+          
+          .role-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+          }
+          
+          .role-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+          }
+          
+          .role-checkbox-label:hover {
+            background-color: var(--bg-main);
+            border-color: var(--primary-light);
+          }
+          
+          .role-card-content {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            font-weight: 500;
           }
         `}
       </style>

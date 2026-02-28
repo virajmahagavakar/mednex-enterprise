@@ -47,15 +47,22 @@ const Subscription = () => {
           <div className="plan-header">
             <div>
               <div className="plan-badge">CURRENT PLAN</div>
-              <h3 className="plan-name">{sub?.planName}</h3>
+              <h3 className="plan-name">{sub?.plan}</h3>
             </div>
-            <div className={`status-pill ${sub?.status.toLowerCase()}`}>
-              {sub?.status === 'ACTIVE' ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-              {sub?.status}
+            <div className={`status-pill ${sub?.daysLeft && sub.daysLeft > 0 ? 'active' : 'inactive'}`}>
+              {sub?.daysLeft && sub.daysLeft > 0 ? (
+                <><CheckCircle size={16} /> ACTIVE</>
+              ) : (
+                <><AlertTriangle size={16} /> EXPIRED</>
+              )}
             </div>
           </div>
 
           <div className="plan-details">
+            <div className="detail-item">
+              <span className="detail-label">Location / Account</span>
+              <span className="detail-value">{sub?.hospitalName}</span>
+            </div>
             <div className="detail-item">
               <span className="detail-label">Billing Cycle</span>
               <span className="detail-value">{sub?.duration}</span>
@@ -63,13 +70,13 @@ const Subscription = () => {
             <div className="detail-item">
               <span className="detail-label">Next Invoice Amount</span>
               <span className="detail-value highlight">
-                {sub?.currency} {sub?.amount.toLocaleString()}
-                {sub?.discountApplied ? <span className="discount-tag">-{sub.discountApplied}% Applied</span> : null}
+                USD {sub?.costPaid?.toLocaleString()}
+                {sub?.discountApplied && <span className="discount-tag">-30% Sub-Branch Discount</span>}
               </span>
             </div>
             <div className="detail-item">
               <span className="detail-label">Next Billing Date</span>
-              <span className="detail-value">{new Date(sub?.nextBillingDate || '').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              <span className="detail-value">{sub?.expiryDate ? new Date(sub.expiryDate).toLocaleDateString() : 'N/A'}</span>
             </div>
           </div>
 

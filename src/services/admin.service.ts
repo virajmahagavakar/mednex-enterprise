@@ -3,7 +3,8 @@ import type {
     BranchRequest, BranchResponse,
     RoleResponse,
     StaffRegistrationRequest, StaffResponse,
-    SubscriptionRequest, SubscriptionResponse
+    SubscriptionRequest, SubscriptionResponse,
+    ProfileResponse, ProfileRequest
 } from './api.types';
 
 export const AdminService = {
@@ -42,6 +43,17 @@ export const AdminService = {
 
     renewSubscription: async (req: SubscriptionRequest): Promise<SubscriptionResponse> => {
         const response = await apiClient.post<SubscriptionResponse>('/admin/subscription/renew', req);
+        return response.data;
+    },
+
+    // --- Profile Management ---
+    getProfile: async (): Promise<ProfileResponse> => {
+        const response = await apiClient.get<ProfileResponse>('/admin/profile');
+        return response.data;
+    },
+
+    updateProfile: async (req: ProfileRequest): Promise<ProfileResponse> => {
+        const response = await apiClient.put<ProfileResponse>('/admin/profile', req);
         return response.data;
     }
 };

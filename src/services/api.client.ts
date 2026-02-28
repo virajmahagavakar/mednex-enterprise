@@ -22,10 +22,16 @@ export const publicApiClient = axios.create({
 
 // Token Management Utility
 export const TokenService = {
-    getToken: () => localStorage.getItem('accessToken'),
+    getToken: () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token || token === 'undefined' || token === 'null') {
+            return null;
+        }
+        return token;
+    },
     getRefreshToken: () => localStorage.getItem('refreshToken'),
     setTokens: (auth: AuthResponse) => {
-        localStorage.setItem('accessToken', auth.accessToken);
+        localStorage.setItem('accessToken', auth.token);
         localStorage.setItem('refreshToken', auth.refreshToken);
     },
     clearTokens: () => {
@@ -64,7 +70,7 @@ apiClient.interceptors.response.use(
                     TokenService.setTokens(data);
 
                     // Re-inject the new token to the failing request
-                    originalRequest.headers['Authorization'] = `Bearer ${data.accessToken}`;
+                    originalRequest.headers['Authorization'] = `Bearer ${data.token}`;
                     return apiClient(originalRequest);
                 } catch (refreshError) {
                     // Refresh failed, force logout

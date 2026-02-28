@@ -6,9 +6,9 @@ export interface AuthRequest {
 }
 
 export interface AuthResponse {
-    accessToken: string;
+    token: string;
     refreshToken: string;
-    expiresIn: number;
+    hospitalId: string;
 }
 
 export interface RefreshRequest {
@@ -42,8 +42,22 @@ export interface BranchResponse {
     code: string;
     address: string;
     tenantId: string;
-    status: string;
-    createdDate: string;
+    active: boolean;
+    createdAt: string;
+}
+
+// Admin Profile Types
+export interface ProfileResponse {
+    name: string;
+    email: string;
+    contactNumber: string;
+    roles: string[];
+    active: boolean;
+}
+
+export interface ProfileRequest {
+    name: string;
+    contactNumber: string;
 }
 
 // Staff & Role Management Types
@@ -92,15 +106,11 @@ export interface SubscriptionRequest {
 }
 
 export interface SubscriptionResponse {
-    id: string; // UUID
-    tenantId: string;
-    planName: string;
+    hospitalName: string;
+    plan: string;
     duration: string;
-    startDate: string;
-    endDate: string;
-    status: string;
-    amount: number;
-    currency: string;
-    nextBillingDate: string;
-    discountApplied: number;
+    costPaid: number;
+    expiryDate: string;
+    daysLeft: number;
+    discountApplied: boolean;
 }
