@@ -16,6 +16,14 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.mednex.mednex_enterprise.core.entity.Role;
+import com.mednex.mednex_enterprise.core.repository.RoleRepository;
+import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
+import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
+import com.mednex.mednex_enterprise.auth.dto.PatientRegistrationRequest;
+
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +36,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final BranchRepository branchRepository;
+    private final RoleRepository roleRepository;
+    private final PatientRepository patientRepository;
 
     public AuthResponse authenticate(AuthRequest request) {
         // 1. Validate Tenant exists and is active in Master DB
@@ -168,6 +178,55 @@ public class AuthService {
                                 .build();
                     })
                     .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    public AuthResponse registerPatient(PatientRegistrationRequest request) {
+        Tenant tenant = tenantRepository.findById(request.getHospitalId())
+                .orElseThrow(() -> new RuntimeException("Hospital not found"));
+
+        if (!tenant.isActive()) {
+            throw new RuntimeException("Hospital account is inactive");
+        }
+
+        try {
+            TenantContext.setCurrentTenant(tenant.getTenantId());
+
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                throw new RuntimeException("Email already exists");
+            }
+
+            Role patientRole = roleRepository.findByName("PATIENT")
+                    .orElseThrow(() -> new RuntimeException("PATIENT role not found"));
+
+            User user = new User();
+            user.setEmail(request.getEmail());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setName(request.getFirstName() + " " + request.getLastName());
+            user.setRoles(Set.of(patientRole));
+            user.setActive(true);
+            userRepository.save(user);
+
+            // Also create or link the clinical Patient entity
+            Optional<Patient> existingPatient = patientRepository.findByEmail(request.getEmail());
+            if (existingPatient.isEmpty()) {
+                Patient newPatient = new Patient();
+                newPatient.setFirstName(request.getFirstName());
+                newPatient.setLastName(request.getLastName());
+                newPatient.setEmail(request.getEmail());
+                newPatient.setPhone(request.getPhoneNumber());
+                patientRepository.save(newPatient);
+            }
+
+            // Authenticate directly after registration
+            return authenticate(AuthRequest.builder()
+                    .email(request.getEmail())
+                    .password(request.getPassword())
+                    .hospitalId(request.getHospitalId())
+                    .build());
 
         } finally {
             TenantContext.clear();

@@ -1,4 +1,4 @@
- package com.mednex.mednex_enterprise;
+package com.mednex.mednex_enterprise;
 
 import com.mednex.mednex_enterprise.core.entity.Role;
 import com.mednex.mednex_enterprise.core.repository.RoleRepository;
@@ -22,6 +22,12 @@ public class MednexEnterpriseApplication {
                 branchAdminRole.setName("BRANCH_ADMIN");
                 branchAdminRole.setDescription("Administrator for a specific hospital branch");
                 roleRepository.save(branchAdminRole);
+            }
+            if (roleRepository.findByName("PATIENT").isEmpty()) {
+                Role patientRole = new Role();
+                patientRole.setName("PATIENT");
+                patientRole.setDescription("Mednex Enterprise Patient User");
+                roleRepository.save(patientRole);
             }
         };
     }
