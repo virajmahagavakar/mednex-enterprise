@@ -62,14 +62,41 @@ public class BranchService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional("tenantTransactionManager")
+    public void removeBranchAdmin(java.util.UUID branchId) {
+        List<User> admins = userRepository.findBranchAdminsByBranchId(branchId);
+        if (!admins.isEmpty()) {
+            for (User admin : admins) {
+                // Remove the branch admin role or delete the user entirely?
+                // Depending on the use case. If they only belong to this branch, we deactivate
+                // them or delete them.
+                // Since this app seems to onboard a staff *strictly* for a branch, deleting the
+                // role or setting active=false is better.
+                admin.setActive(false);
+                admin.getRoles().clear();
+                userRepository.save(admin);
+            }
+        }
+    }
+
     private BranchResponse mapToResponse(Branch branch) {
-        return BranchResponse.builder()
+        BranchResponse.BranchResponseBuilder builder = BranchResponse.builder()
                 .id(branch.getId())
                 .name(branch.getName())
                 .code(branch.getCode())
                 .address(branch.getAddress())
                 .active(branch.isActive())
-                .createdAt(branch.getCreatedAt())
-                .build();
+                .createdAt(branch.getCreatedAt());
+
+        // Find the Branch Admin for this branch
+        List<User> admins = userRepository.findBranchAdminsByBranchId(branch.getId());
+        if (!admins.isEmpty()) {
+            User admin = admins.get(0); // Assuming one branch admin per branch for now
+            builder.branchAdminId(admin.getId());
+            builder.branchAdminName(admin.getName());
+            builder.branchAdminEmail(admin.getEmail());
+        }
+
+        return builder.build();
     }
 }

@@ -46,17 +46,23 @@ public class StaffService {
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
 
         // 3. Security Check: Admin can only assign staff to branches they belong to.
-        // Even HOSPITAL_ADMIN should only assign staff to their actual assigned
-        // branches (Main Branch).
-        Set<UUID> adminBranchIds = currentAdmin.getBranches().stream().map(Branch::getId).collect(Collectors.toSet());
-        if (currentAdmin.getPrimaryBranch() != null) {
-            adminBranchIds.add(currentAdmin.getPrimaryBranch().getId());
-        }
+        // Bypass this check if the user is a HOSPITAL_ADMIN, as they have global
+        // access.
+        boolean isHospitalAdmin = currentAdmin.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("HOSPITAL_ADMIN") || r.getName().equals("ROLE_HOSPITAL_ADMIN"));
 
-        for (UUID requestedBranchId : request.getBranches()) {
-            if (!adminBranchIds.contains(requestedBranchId)) {
-                throw new SecurityException(
-                        "You do not have permission to assign staff to branch: " + requestedBranchId);
+        if (!isHospitalAdmin) {
+            Set<UUID> adminBranchIds = currentAdmin.getBranches().stream().map(Branch::getId)
+                    .collect(Collectors.toSet());
+            if (currentAdmin.getPrimaryBranch() != null) {
+                adminBranchIds.add(currentAdmin.getPrimaryBranch().getId());
+            }
+
+            for (UUID requestedBranchId : request.getBranches()) {
+                if (!adminBranchIds.contains(requestedBranchId)) {
+                    throw new SecurityException(
+                            "You do not have permission to assign staff to branch: " + requestedBranchId);
+                }
             }
         }
 
@@ -142,15 +148,16 @@ public class StaffService {
             }
         }
 
-        // 7c. Save the profile
-        StaffProfile profile = StaffProfile.builder()
+        // 8. Save the Staff User BEFORE linking it to StaffProfile
+        staffUser = userRepository.save(staffUser);
+
+        // 9. Create and Link the Staff Profile
+        StaffProfile staffProfile = StaffProfile.builder()
                 .user(staffUser)
                 .nationalIdNumber(profileDto.getNationalIdNumber())
                 .residentialAddress(profileDto.getResidentialAddress())
                 .bloodGroup(profileDto.getBloodGroup())
                 .emergencyContactNumber(profileDto.getEmergencyContactNumber())
-
-                // Medical fields (will be null for non-clinical like Cleaners)
                 .medicalLicenseNumber(profileDto.getMedicalLicenseNumber())
                 .qualification(profileDto.getQualification())
                 .specialization(profileDto.getSpecialization())
@@ -160,8 +167,7 @@ public class StaffService {
                 .biography(profileDto.getBiography())
                 .build();
 
-        staffProfileRepository.save(profile);
-
+        staffProfileRepository.save(staffProfile);
         StaffResponse response = mapToResponse(staffUser);
         response.setProfileDetails(request.getProfileDetails());
         return response;

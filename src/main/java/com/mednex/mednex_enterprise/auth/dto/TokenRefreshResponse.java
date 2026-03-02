@@ -8,7 +8,7 @@ import lombok.Data;
 @Builder
 @AllArgsConstructor
 public class TokenRefreshResponse {
-    private String accessToken;
+    private String token;
     private String refreshToken;
+    private String hospitalId;
 }
-

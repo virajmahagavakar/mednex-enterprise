@@ -7,6 +7,7 @@ import com.mednex.mednex_enterprise.multitenancy.master.Tenant;
 import com.mednex.mednex_enterprise.multitenancy.master.TenantRepository;
 import com.mednex.mednex_enterprise.security.service.JwtService;
 import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.core.repository.BranchRepository;
 import com.mednex.mednex_enterprise.core.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,11 +27,38 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final BranchRepository branchRepository;
 
     public AuthResponse authenticate(AuthRequest request) {
         // 1. Validate Tenant exists and is active in Master DB
-        Tenant tenant = tenantRepository.findById(request.getHospitalId())
-                .orElseThrow(() -> new RuntimeException("Hospital not found"));
+        Tenant tenant = tenantRepository.findById(request.getHospitalId()).orElse(null);
+
+        // If not found by exact ID, it might be a branch code. Let's search across all
+        // tenants.
+        if (tenant == null) {
+            List<Tenant> allTenants = tenantRepository.findAll();
+            for (Tenant t : allTenants) {
+                if (!t.isActive())
+                    continue;
+
+                try {
+                    TenantContext.setCurrentTenant(t.getTenantId());
+                    // See if this tenant has a branch with this code
+                    if (branchRepository.findByCode(request.getHospitalId()).isPresent()) {
+                        tenant = t;
+                        break;
+                    }
+                } catch (Exception e) {
+                    // Ignore if DB isn't ready or branch not found
+                } finally {
+                    TenantContext.clear();
+                }
+            }
+        }
+
+        if (tenant == null) {
+            throw new RuntimeException("Hospital not found");
+        }
 
         if (!tenant.isActive()) {
             throw new RuntimeException("Hospital account is inactive");
@@ -38,7 +66,7 @@ public class AuthService {
 
         // 2. Map context to Tenant DB and extract user
         try {
-            TenantContext.setCurrentTenant(request.getHospitalId());
+            TenantContext.setCurrentTenant(tenant.getTenantId());
 
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new RuntimeException("Invalid email or password"));
@@ -134,8 +162,9 @@ public class AuthService {
                         String accessToken = jwtService.generateToken(userDetails, extraClaims);
 
                         return com.mednex.mednex_enterprise.auth.dto.TokenRefreshResponse.builder()
-                                .accessToken(accessToken)
+                                .token(accessToken)
                                 .refreshToken(request.getRefreshToken())
+                                .hospitalId(request.getHospitalId())
                                 .build();
                     })
                     .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));

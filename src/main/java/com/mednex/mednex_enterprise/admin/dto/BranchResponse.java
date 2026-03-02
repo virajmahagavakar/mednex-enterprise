@@ -19,5 +19,9 @@ public class BranchResponse {
     private String address;
     private boolean active;
     private LocalDateTime createdAt;
-}
 
+    // Branch Admin details (if assigned)
+    private UUID branchAdminId;
+    private String branchAdminName;
+    private String branchAdminEmail;
+}

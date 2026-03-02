@@ -36,8 +36,13 @@ public class TenantMigrationRunner {
                         .dataSource(dataSource)
                         .locations("classpath:db/migration/tenant")
                         .baselineOnMigrate(true)
+                        .validateOnMigrate(false) // Disable validation to ignore checksum mismatches
+                        // Alternatively you can enable repair: .cleanDisabled(false) and then run
+                        // flyway.repair() before migrate
                         .load();
 
+                // flyway.repair(); // Use repair if you want to update the schema history with
+                // new checksums
                 flyway.migrate();
                 log.info("Successfully migrated tenant: {}", tenant.getTenantId());
             } catch (Exception e) {

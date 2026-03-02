@@ -31,5 +31,11 @@ public class BranchController {
     public ResponseEntity<List<BranchResponse>> getAllBranches() {
         return ResponseEntity.ok(branchService.getAllBranches());
     }
-}
 
+    @DeleteMapping("/{branchId}/admin")
+    @PreAuthorize("hasAuthority('HOSPITAL_ADMIN')")
+    public ResponseEntity<Void> removeBranchAdmin(@PathVariable java.util.UUID branchId) {
+        branchService.removeBranchAdmin(branchId);
+        return ResponseEntity.noContent().build();
+    }
+}
