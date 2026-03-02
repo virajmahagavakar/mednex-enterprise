@@ -19,6 +19,10 @@ export const AdminService = {
         return response.data;
     },
 
+    removeBranchAdmin: async (branchId: string): Promise<void> => {
+        await apiClient.delete<void>(`/admin/branches/${branchId}/admin`);
+    },
+
     // --- Role & Staff Management ---
     getRoles: async (): Promise<RoleResponse[]> => {
         const response = await apiClient.get<RoleResponse[]>('/admin/roles');

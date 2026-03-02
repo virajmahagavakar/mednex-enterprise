@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, Mail, Building2 } from 'lucide-react';
 import AuthLayout from '../components/layout/AuthLayout';
 import { AuthService } from '../services/auth.service';
+import { TokenService } from '../services/api.client';
+import { jwtDecode } from 'jwt-decode';
+
+interface JWTPayload {
+    sub: string;
+    roles?: string[];
+    hospital_id?: string;
+    exp: number;
+}
 
 const Login = () => {
     const [tenantCode, setTenantCode] = useState('');
@@ -21,7 +30,29 @@ const Login = () => {
                 password,
                 hospitalId: tenantCode || undefined
             });
-            navigate('/admin');
+
+            // Route based on role
+            const token = TokenService.getToken();
+            if (token) {
+                const decoded = jwtDecode<JWTPayload>(token);
+                const roles = decoded.roles || [];
+
+                const isDoctor = roles.some(r => r.includes('DOCTOR') || r.includes('SURGEON') || r.includes('CONSULTANT'));
+                const isReceptionist = roles.some(r => r.includes('RECEPTIONIST'));
+                const isNurse = roles.some(r => r.includes('NURSE'));
+
+                if (isDoctor) {
+                    navigate('/doctor');
+                } else if (isReceptionist) {
+                    navigate('/receptionist');
+                } else if (isNurse) {
+                    navigate('/nurse');
+                } else {
+                    navigate('/admin');
+                }
+            } else {
+                navigate('/admin');
+            }
         } catch (error) {
             console.error(error);
             alert('Login failed. Please check your credentials.');

@@ -30,13 +30,16 @@ export const TokenService = {
         return token;
     },
     getRefreshToken: () => localStorage.getItem('refreshToken'),
+    getHospitalId: () => localStorage.getItem('hospitalId'),
     setTokens: (auth: AuthResponse) => {
         localStorage.setItem('accessToken', auth.token);
         localStorage.setItem('refreshToken', auth.refreshToken);
+        if (auth.hospitalId) localStorage.setItem('hospitalId', auth.hospitalId);
     },
     clearTokens: () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('hospitalId');
     }
 };
 
@@ -62,11 +65,12 @@ apiClient.interceptors.response.use(
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
             originalRequest._retry = true;
             const refreshToken = TokenService.getRefreshToken();
+            const hospitalId = TokenService.getHospitalId();
 
-            if (refreshToken) {
+            if (refreshToken && hospitalId) {
                 try {
                     // Attempt to refresh token
-                    const { data } = await publicApiClient.post<AuthResponse>('/auth/refresh', { refreshToken });
+                    const { data } = await publicApiClient.post<AuthResponse>('/auth/refresh', { refreshToken, hospitalId });
                     TokenService.setTokens(data);
 
                     // Re-inject the new token to the failing request

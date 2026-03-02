@@ -81,9 +81,13 @@ const Branches = () => {
 
     setIsSubmitting(true);
     try {
-      // Bypassing dynamic role fetch due to 403 Forbidden. Hardcoding ROLE_BRANCH_ADMIN ID.
-      // In a real system you'd ensure the endpoint is accessible or pre-fetched.
-      const branchAdminRoleId = 3; // Assuming 1=SUPER_ADMIN, 2=HOSPITAL_ADMIN, 3=BRANCH_ADMIN. Adjust if needed.
+      // Dynamically fetch the real ROLE_BRANCH_ADMIN ID instead of hardcoding 3
+      const roles = await AdminService.getRoles();
+      const branchAdminRole = roles.find(r => r.name === 'ROLE_BRANCH_ADMIN' || r.name === 'BRANCH_ADMIN');
+
+      if (!branchAdminRole) {
+        throw new Error("BRANCH_ADMIN role not found in the system.");
+      }
 
       const payload: StaffRegistrationRequest = {
         name: adminFormData.name || '',
@@ -91,7 +95,7 @@ const Branches = () => {
         password: adminFormData.password,
         primaryBranchId: selectedBranch.id,
         branches: [selectedBranch.id],
-        roleIds: [branchAdminRoleId],
+        roleIds: [branchAdminRole.id],
         profileDetails: {
           nationalIdNumber: "N/A", // Required by backend currently, sending dummy
           residentialAddress: "N/A"
@@ -108,6 +112,24 @@ const Branches = () => {
     } catch (error) {
       console.error("Failed to assign admin", error);
       alert("Failed to assign Branch Admin. Ensure the email is unique.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAdmin = async () => {
+    if (!selectedBranch || !selectedBranch.branchAdminId) return;
+    if (!window.confirm(`Are you sure you want to remove ${selectedBranch.branchAdminName} from this branch?`)) return;
+
+    setIsSubmitting(true);
+    try {
+      await AdminService.removeBranchAdmin(selectedBranch.id);
+      setIsDetailsModalOpen(false);
+      setSelectedBranch(null);
+      fetchBranches(); // Refresh list to get updated branches
+    } catch (error) {
+      console.error("Failed to remove admin", error);
+      alert("Failed to remove Branch Admin.");
     } finally {
       setIsSubmitting(false);
     }
@@ -168,7 +190,11 @@ const Branches = () => {
 
               <div className="branch-card-footer">
                 {userRole === 'HOSPITAL_ADMIN' ? (
-                  <button className="btn-primary" style={{ flex: 1, padding: '0.4rem' }} onClick={() => { setSelectedBranch(branch); setIsAssignAdminModalOpen(true); }}>Assign Admin</button>
+                  !branch.branchAdminId ? (
+                    <button className="btn-primary" style={{ flex: 1, padding: '0.4rem' }} onClick={() => { setSelectedBranch(branch); setIsAssignAdminModalOpen(true); }}>Assign Admin</button>
+                  ) : (
+                    <div style={{ flex: 1, padding: '0.4rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500, alignSelf: 'center' }}>Admin Assigned</div>
+                  )
                 ) : (
                   <button className="btn-outline" onClick={() => navigate('/admin/staff')}>Manage Staff</button>
                 )}
@@ -251,12 +277,32 @@ const Branches = () => {
                   <p>{selectedBranch.address}</p>
                 </div>
 
-                {/* Placeholder for Branch Admin Info */}
+                {/* Branch Admin Info */}
                 <div className="detail-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border-light)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <label>Branch Admins & Managers</label>
-                  <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontSize: '0.875rem' }}>
-                    Staff management requires active navigation to the 'Staff & Roles' module. Branch administrative contacts will be displayed here in future updates.
-                  </p>
+                  <label>Branch Admin</label>
+                  {selectedBranch.branchAdminId ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                      <div>
+                        <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>{selectedBranch.branchAdminName}</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{selectedBranch.branchAdminEmail}</p>
+                      </div>
+                      {userRole === 'HOSPITAL_ADMIN' && (
+                        <button
+                          type="button"
+                          className="btn-outline"
+                          style={{ borderColor: '#ef4444', color: '#ef4444', padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                          onClick={handleDeleteAdmin}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? 'Removing...' : 'Remove Admin'}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                      No Branch Admin assigned yet. Use the "Assign Admin" button on the branch card.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

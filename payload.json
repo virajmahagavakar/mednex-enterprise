@@ -1,0 +1,16 @@
+{
+  "name": "test",
+  "email": "test@test.com",
+  "password": "test",
+  "primaryBranchId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "branches": [
+    "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  ],
+  "roleIds": [
+    3
+  ],
+  "profileDetails": {
+    "nationalIdNumber": "N/A",
+    "residentialAddress": "N/A"
+  }
+}

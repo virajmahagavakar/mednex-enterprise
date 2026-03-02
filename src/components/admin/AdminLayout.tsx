@@ -14,6 +14,7 @@ import { AuthService } from '../../services/auth.service';
 import { TokenService } from '../../services/api.client';
 import { AdminService } from '../../services/admin.service';
 import { jwtDecode } from 'jwt-decode';
+import ProfileModal from '../shared/ProfileModal';
 
 interface JWTPayload {
   sub: string;
@@ -26,23 +27,14 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string>('Admin User');
   const [userRole, setUserRole] = useState<string>('Hospital Admin');
-  const [userContact, setUserContact] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editContact, setEditContact] = useState('');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Custom fetch function to get live profile details
   const fetchProfileDetails = async () => {
     try {
       const profile = await AdminService.getProfile();
       setUserEmail(profile.name || profile.email);
-      setUserContact(profile.contactNumber || 'Not Provided');
-      setEditName(profile.name || '');
-      setEditContact(profile.contactNumber || '');
     } catch (e) {
       console.error("Failed to fetch fresh profile details", e);
     }
@@ -79,23 +71,7 @@ const AdminLayout = () => {
   const handleOpenProfile = () => {
     setIsProfileModalOpen(true);
     setIsDropdownOpen(false);
-    setIsEditingProfile(false);
     fetchProfileDetails(); // Refresh when opening
-  };
-
-  const handleSaveProfile = async () => {
-    try {
-      setIsSavingProfile(true);
-      const updated = await AdminService.updateProfile({ name: editName, contactNumber: editContact });
-      setUserEmail(updated.name || updated.email);
-      setUserContact(updated.contactNumber || 'Not Provided');
-      setIsEditingProfile(false);
-    } catch (e) {
-      console.error("Failed to update profile", e);
-      alert("Failed to update profile.");
-    } finally {
-      setIsSavingProfile(false);
-    }
   };
 
   const handleLogout = () => {
@@ -105,7 +81,7 @@ const AdminLayout = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, roles: ['Hospital Admin', 'Branch Admin'] },
-    { name: 'Branches', path: '/admin/branches', icon: <Building2 size={20} />, roles: ['Hospital Admin', 'Branch Admin'] },
+    { name: 'Branches', path: '/admin/branches', icon: <Building2 size={20} />, roles: ['Hospital Admin'] },
     { name: 'Staff & Roles', path: '/admin/staff', icon: <Users size={20} />, roles: ['Hospital Admin', 'Branch Admin'] },
     { name: 'Subscription', path: '/admin/subscription', icon: <CreditCard size={20} />, roles: ['Hospital Admin', 'Branch Admin'] },
     { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} />, roles: ['Hospital Admin'] },
@@ -186,65 +162,15 @@ const AdminLayout = () => {
       </main>
 
       {/* Admin Profile Modal */}
-      {isProfileModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content profile-modal">
-            <div className="modal-header">
-              <h3>Admin Profile</h3>
-              <button className="icon-btn" onClick={() => setIsProfileModalOpen(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="profile-hero">
-                <div className="profile-avatar-large">{userEmail.charAt(0).toUpperCase()}</div>
-                {!isEditingProfile ? (
-                  <h2>{userEmail}</h2>
-                ) : (
-                  <input type="text" className="input-field" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Full Name" style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.5rem', width: '80%' }} />
-                )}
-                <span className="role-badge">{userRole}</span>
-              </div>
-
-              <div className="profile-details-grid">
-                <div className="detail-group">
-                  <label>Contact Number (Emergency)</label>
-                  {!isEditingProfile ? (
-                    <p>{userContact}</p>
-                  ) : (
-                    <input type="text" className="input-field" value={editContact} onChange={(e) => setEditContact(e.target.value)} placeholder="Phone Number" style={{ width: '100%', padding: '0.25rem 0.5rem' }} />
-                  )}
-                </div>
-                <div className="detail-group">
-                  <label>Assigned Role</label>
-                  <p>{userRole}</p>
-                </div>
-                <div className="detail-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Hospital Hierarchy Access</label>
-                  <p>{userRole === 'Hospital Admin' ? 'All Branches (View Only), Main Branch (Full Access)' : 'Global Access'}</p>
-                </div>
-                <div className="detail-group">
-                  <label>Account Status</label>
-                  <p className="status-active">Active</p>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              {!isEditingProfile ? (
-                <>
-                  <button className="btn-outline" onClick={() => setIsEditingProfile(true)}>Edit Profile</button>
-                  <button className="btn-primary" onClick={() => setIsProfileModalOpen(false)}>Close</button>
-                </>
-              ) : (
-                <>
-                  <button className="btn-outline" onClick={() => setIsEditingProfile(false)}>Cancel</button>
-                  <button className="btn-primary" onClick={handleSaveProfile} disabled={isSavingProfile}>
-                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userEmail={userEmail}
+        userRole={userRole}
+        onProfileUpdated={(name) => {
+          setUserEmail(name);
+        }}
+      />
 
       <style>
         {`
@@ -527,81 +453,9 @@ const AdminLayout = () => {
             background-color: #FEF2F2;
           }
 
-          /* Modal Styles */
-          .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-            z-index: 1000; display: flex; align-items: center; justify-content: center;
-            padding: 1rem; animation: fadeIn 0.2s ease;
-          }
-          
-          .modal-content.profile-modal {
-            background-color: white; border-radius: var(--radius-lg);
-            width: 100%; max-width: 500px;
-            display: flex; flex-direction: column; box-shadow: var(--shadow-xl);
-          }
-          
-          .modal-header {
-            padding: 1.5rem; border-bottom: 1px solid var(--border-light);
-            display: flex; align-items: center; justify-content: space-between;
-          }
-          
-          .modal-header h3 { margin: 0; font-size: 1.25rem; color: var(--text-primary); }
-          
-          .modal-body {
-            padding: 1.5rem;
-          }
-          
-          .profile-hero {
-            display: flex; flex-direction: column; align-items: center; text-align: center;
-            margin-bottom: 2rem;
-          }
-          
-          .profile-avatar-large {
-            width: 80px; height: 80px; border-radius: 50%;
-            background-color: var(--primary-light); color: var(--primary);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2rem; font-weight: 600; margin-bottom: 1rem;
-          }
-          
-          .profile-hero h2 {
-            margin: 0 0 0.5rem 0; font-size: 1.5rem; color: var(--text-primary);
-          }
-          
-          .role-badge {
-            display: inline-block; padding: 0.25rem 0.75rem;
-            background-color: #F1F5F9; border: 1px solid #E2E8F0;
-            border-radius: 1rem; font-size: 0.75rem; font-weight: 600; color: #475569;
-          }
-          
-          .profile-details-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
-            background-color: #FAFCFF; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-light);
-          }
-          
-          .detail-group label {
-            display: block; font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.25rem;
-          }
-          
-          .detail-group p {
-            margin: 0; font-size: 0.875rem; color: var(--text-primary); font-weight: 500;
-          }
-          
-          .status-active { color: var(--success) !important; font-weight: 600 !important; }
-
-          .modal-footer {
-            padding: 1.5rem; border-top: 1px solid var(--border-light);
-            display: flex; justify-content: flex-end; gap: 1rem;
-            background-color: #FAFCFF; border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);
-          }
-          
           @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
           }
 
           /* Responsive */

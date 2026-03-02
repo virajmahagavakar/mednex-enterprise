@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { RoleResponse, StaffResponse, BranchResponse, StaffRegistrationRequest } from '../../services/api.types';
 import { AdminService } from '../../services/admin.service';
-import { Plus, Search, Shield, Building2, X } from 'lucide-react';
+import { TokenService } from '../../services/api.client';
+import { jwtDecode } from 'jwt-decode';
+import { Plus, Search, Shield, X } from 'lucide-react';
 
 const Staff = () => {
   const [staff, setStaff] = useState<StaffResponse[]>([]);
@@ -15,10 +17,28 @@ const Staff = () => {
 
   const [formData, setFormData] = useState<StaffRegistrationRequest>({
     name: '', email: '', password: '', roleIds: [], branches: [], primaryBranchId: '',
-    profileDetails: { nationalIdNumber: '', residentialAddress: '', specialization: '', medicalLicenseNumber: '' }
+    profileDetails: { nationalIdNumber: '', residentialAddress: '', qualification: '', specialization: '', medicalLicenseNumber: '', yearsOfExperience: undefined, defaultConsultationFee: undefined }
   });
 
+  const [userRole, setUserRole] = useState<string>('');
+  const [userBranchId, setUserBranchId] = useState<string>('');
+
   useEffect(() => {
+    const token = TokenService.getToken();
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        const roles = typeof decoded.role === 'string' ? [decoded.role] : (decoded.role || []);
+        if (roles.includes('HOSPITAL_ADMIN')) setUserRole('HOSPITAL_ADMIN');
+        else if (roles.includes('BRANCH_ADMIN')) setUserRole('BRANCH_ADMIN');
+
+        if (decoded.branchId) {
+          setUserBranchId(decoded.branchId);
+        }
+      } catch (err) {
+        console.error("Failed to decode token", err);
+      }
+    }
     fetchData();
   }, []);
 
@@ -64,6 +84,15 @@ const Staff = () => {
     setFormData({ ...formData, roleIds: updatedRoles });
   };
 
+  const openModal = () => {
+    setFormData({
+      name: '', email: '', password: '', roleIds: [], branches: userRole === 'BRANCH_ADMIN' ? [userBranchId] : [],
+      primaryBranchId: userRole === 'BRANCH_ADMIN' ? userBranchId : '',
+      profileDetails: { nationalIdNumber: '', residentialAddress: '', qualification: '', specialization: '', medicalLicenseNumber: '', yearsOfExperience: undefined, defaultConsultationFee: undefined }
+    });
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -71,7 +100,7 @@ const Staff = () => {
           <h2 className="page-title">Staff & Roles Management</h2>
           <p className="page-description">Manage hospital personnel, roles, and branch assignments</p>
         </div>
-        <button className="btn-primary" style={{ width: 'auto', padding: '0.625rem 1.25rem' }} onClick={() => setIsModalOpen(true)}>
+        <button className="btn-primary" style={{ width: 'auto', padding: '0.625rem 1.25rem' }} onClick={openModal}>
           <Plus size={18} />
           Onboard Staff
         </button>
@@ -116,7 +145,7 @@ const Staff = () => {
             </thead>
             <tbody>
               {staff
-                .filter(person => !person.roles?.some(role => role?.name?.includes('ADMIN')))
+                .filter(person => !person.roles?.some(role => role.includes('ADMIN')))
                 .map(person => (
                   <tr key={person.id}>
                     <td>
@@ -132,23 +161,28 @@ const Staff = () => {
                     </td>
                     <td>
                       <div className="role-tags">
-                        {person.roles.map(role => (
-                          <span key={role.id} className="role-tag">
+                        {person.roles?.map((role, idx) => (
+                          <span key={idx} className="role-tag">
                             <Shield size={12} />
-                            {role.name}
+                            {role}
                           </span>
                         ))}
                       </div>
                     </td>
                     <td>
                       <div className="branch-info">
-                        <Building2 size={16} color="var(--text-tertiary)" />
-                        <span style={{ color: 'var(--text-secondary)' }}>Branch</span>
+                        {person.primaryBranchId ? (
+                          <span>{branches.find(b => b.id === person.primaryBranchId)?.name || 'Unknown Branch'}</span>
+                        ) : (
+                          <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontSize: '0.875rem' }}>
+                            Not assigned
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td>
-                      <span className={`status-dot ${(person.status || 'unknown').toLowerCase()}`}>
-                        {person.status || 'UNKNOWN'}
+                      <span className={`status-badge ${person.active ? 'active' : 'inactive'}`}>
+                        {person.active ? 'ACTIVE' : 'INACTIVE'}
                       </span>
                     </td>
                     <td>
@@ -168,7 +202,7 @@ const Staff = () => {
               <h3>Onboard New Staff Member</h3>
               <button type="button" className="icon-btn" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
-            <form onSubmit={handleOnboardStaff}>
+            <form onSubmit={handleOnboardStaff} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
               <div className="modal-body">
                 <div className="form-section">
                   <h4 className="section-title">Personal Details</h4>
@@ -200,15 +234,17 @@ const Staff = () => {
 
                 <div className="form-section">
                   <h4 className="section-title">Access & Assignments</h4>
-                  <div className="input-row">
-                    <div className="input-group">
-                      <label>Primary Branch *</label>
-                      <select required className="input-field" value={formData.primaryBranchId} onChange={e => setFormData({ ...formData, primaryBranchId: e.target.value, branches: [e.target.value] })}>
-                        <option value="">Select Branch</option>
-                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                      </select>
+                  {userRole !== 'BRANCH_ADMIN' && (
+                    <div className="input-row">
+                      <div className="input-group">
+                        <label>Primary Branch *</label>
+                        <select required className="input-field" value={formData.primaryBranchId} onChange={e => setFormData({ ...formData, primaryBranchId: e.target.value, branches: [e.target.value] })}>
+                          <option value="">Select Branch</option>
+                          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="input-group">
                     <label>Assign Roles *</label>
                     <div className="role-checkboxes">
@@ -229,12 +265,28 @@ const Staff = () => {
                   <h4 className="section-title">Clinical Profile (Optional)</h4>
                   <div className="input-row">
                     <div className="input-group">
+                      <label>Qualification *</label>
+                      <input type="text" className="input-field" placeholder="e.g. MBBS, MD, B.Sc Nursing" value={formData.profileDetails?.qualification} onChange={e => setFormData({ ...formData, profileDetails: { ...formData.profileDetails!, qualification: e.target.value } })} />
+                    </div>
+                    <div className="input-group">
                       <label>Specialization</label>
                       <input type="text" className="input-field" placeholder="e.g. Cardiology" value={formData.profileDetails?.specialization} onChange={e => setFormData({ ...formData, profileDetails: { ...formData.profileDetails!, specialization: e.target.value } })} />
                     </div>
+                  </div>
+                  <div className="input-row">
                     <div className="input-group">
                       <label>Medical License No.</label>
                       <input type="text" className="input-field" value={formData.profileDetails?.medicalLicenseNumber} onChange={e => setFormData({ ...formData, profileDetails: { ...formData.profileDetails!, medicalLicenseNumber: e.target.value } })} />
+                    </div>
+                    <div className="input-group">
+                      <label>Years of Experience *</label>
+                      <input type="number" min="0" className="input-field" placeholder="e.g. 5" value={formData.profileDetails?.yearsOfExperience || ''} onChange={e => setFormData({ ...formData, profileDetails: { ...formData.profileDetails!, yearsOfExperience: parseInt(e.target.value) || undefined } })} />
+                    </div>
+                  </div>
+                  <div className="input-row">
+                    <div className="input-group">
+                      <label>Default Consultation Fee (₹) *</label>
+                      <input type="number" min="0" className="input-field" placeholder="e.g. 500" value={formData.profileDetails?.defaultConsultationFee || ''} onChange={e => setFormData({ ...formData, profileDetails: { ...formData.profileDetails!, defaultConsultationFee: parseInt(e.target.value) || undefined } })} />
                     </div>
                   </div>
                 </div>
@@ -278,14 +330,28 @@ const Staff = () => {
             display: flex; justify-content: flex-end; gap: 1rem;
             background-color: #FAFCFF; border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);
           }
-          .form-section { display: flex; flex-direction: column; gap: 1rem; }
+          .form-section {
+            margin-bottom: 1.5rem;
+            display: flex; flex-direction: column; gap: 1rem;
+          }
           .section-title {
-            font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.5px;
-            color: var(--text-secondary); margin: 0 0 0.5rem 0;
+            font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase;
+            letter-spacing: 0.5px; font-weight: 600; margin-bottom: 1rem;
             border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;
           }
-          .role-checkboxes { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-          .role-checkbox-label { cursor: pointer; }
+          .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+          }
+          .role-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+          }
+          .role-checkbox-label {
+            cursor: pointer;
+          }
           .role-checkbox-label input[type="checkbox"] { display: none; }
           .role-card-content {
             display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem;
@@ -293,12 +359,29 @@ const Staff = () => {
             transition: all var(--transition-fast); color: var(--text-secondary);
             font-weight: 500; font-size: 0.875rem;
           }
+          .role-checkbox-label:hover .role-card-content {
+            background-color: var(--bg-main);
+            border-color: var(--primary-light);
+          }
           .role-checkbox-label input[type="checkbox"]:checked + .role-card-content {
             border-color: var(--primary); background-color: var(--primary-light);
             color: var(--primary); box-shadow: 0 0 0 1px var(--primary);
           }
 
-          /* Reusing page-container, page-header, page-title, page-description, card, toolbar, search-bar, etc from Branches.tsx */
+          /* Reused from Branches.tsx */
+          .page-container { display: flex; flex-direction: column; gap: 1.5rem; }
+          .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
+          .page-title { font-size: 1.5rem; margin-bottom: 0.25rem; }
+          .page-description { color: var(--text-secondary); font-size: 0.875rem; }
+          .card { background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); }
+          .toolbar { padding: 1rem; display: flex; gap: 1rem; justify-content: space-between; align-items: center; }
+          .search-bar { flex: 1; position: relative; max-width: 400px; }
+          .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
+          .search-input { width: 100%; padding: 0.625rem 1rem 0.625rem 2.5rem; border: 1px solid #9CA3AF; border-radius: var(--radius-md); font-family: inherit; transition: all var(--transition-fast); }
+          .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+          .input-field { width: 100%; padding: 0.75rem 1rem; border: 1px solid #9CA3AF; border-radius: var(--radius-md); font-family: inherit; transition: all var(--transition-fast); background-color: var(--bg-surface); }
+          .input-field:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
           
           .toolbar {
             justify-content: space-between;
@@ -312,7 +395,7 @@ const Staff = () => {
 
           .select-filter {
             padding: 0.625rem 2rem 0.625rem 1rem;
-            border: 1px solid var(--border);
+            border: 1px solid #9CA3AF;
             border-radius: var(--radius-md);
             font-family: inherit;
             background-color: white;
@@ -414,27 +497,30 @@ const Staff = () => {
             color: var(--text-secondary);
           }
 
-          .status-dot {
+          .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: var(--bg-main);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
           }
-
-          .status-dot::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
+          
+          .status-badge.active {
+            background-color: var(--success-bg);
+            color: var(--success);
+            border-color: #BBF7D0;
           }
-
-          .status-dot.active::before {
-            background-color: var(--success);
-          }
-
-          .status-dot.onleave::before {
-            background-color: var(--warning);
+          
+          .status-badge.inactive, .status-badge.unknown {
+            background-color: var(--warning-bg);
+            color: var(--warning);
+            border-color: #FEF08A;
           }
 
           .btn-link {
@@ -447,58 +533,6 @@ const Staff = () => {
             text-decoration: underline;
           }
           
-          /* Modal Form Grid Fixes */
-          .form-section {
-            margin-bottom: 1.5rem;
-          }
-          
-          .section-title {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--border-light);
-            padding-bottom: 0.5rem;
-          }
-          
-          .input-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-          }
-          
-          .role-checkboxes {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 0.75rem;
-          }
-          
-          .role-checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-          }
-          
-          .role-checkbox-label:hover {
-            background-color: var(--bg-main);
-            border-color: var(--primary-light);
-          }
-          
-          .role-card-content {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-primary);
-            font-weight: 500;
-          }
         `}
       </style>
     </div>

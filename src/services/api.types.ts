@@ -44,6 +44,9 @@ export interface BranchResponse {
     tenantId: string;
     active: boolean;
     createdAt: string;
+    branchAdminId?: string;
+    branchAdminName?: string;
+    branchAdminEmail?: string;
 }
 
 // Admin Profile Types
@@ -95,8 +98,10 @@ export interface StaffResponse {
     id: string; // UUID
     name: string;
     email: string;
-    status: string;
-    roles: RoleResponse[];
+    active: boolean;
+    primaryBranchId?: string;
+    branches?: string[];
+    roles: string[];
     profileDetails?: StaffProfileDTO;
 }
 
