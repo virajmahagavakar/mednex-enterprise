@@ -1,0 +1,22 @@
+﻿        name         |            email            |                           password                           |       role        
+---------------------+-----------------------------+--------------------------------------------------------------+-------------------
+ Admin_apple         | admin@apple.com             | $2a$10$w9kUFRKZxt2hKB076sPUru/IJoRV4yLg1PA41rmMcDCwzb8R3dQM. | HOSPITAL_ADMIN
+ city_admin          | admin@city.com              | $2a$10$TvuBLHrUVHukCgYvr2Shz.Kr33Y0y7xSvop965gHoCRKI8fvnDk4G | BRANCH_ADMIN
+ Dr.shravani shelke  | shravani@apple.com          | $2a$10$6mgnuhms1E6/xUuFdsqaxe372VznIEvDTeoNBAWUnljCbqpZ.5uaq | DOCTOR
+ Dr. Arush Patel     | arush.surgeon@mednex.com    | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | SURGEON
+ Dr. Sneha Desai     | sneha.consultant@mednex.com | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | CONSULTANT
+ Dr. Ramesh Rao      | ramesh.doctor@mednex.com    | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | DOCTOR
+ Priya Sharma        | priya.nurse@mednex.com      | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | NURSE
+ Dr. Ananya Reddy    | ananya.radio@mednex.com     | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | RADIOLOGIST
+ Dr. Rahul Verma     | rahul.patho@mednex.com      | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | PATHOLOGIST
+ Dr. Vikram Singh    | vikram.anes@mednex.com      | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | ANESTHETIST
+ Amit Kumar          | amit.labtech@mednex.com     | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | LAB_TECHNICIAN
+ Deepak Nair         | deepak.pharma@mednex.com    | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | PHARMACIST
+ Neha Kapoor         | neha.reception@mednex.com   | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | RECEPTIONIST
+ Sanjay Jain         | sanjay.billing@mednex.com   | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | BILLING_EXECUTIVE
+ Kavita Iyer         | kavita.hr@mednex.com        | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | HR_MANAGER
+ Ramesh Yadav        | ramesh.driver@mednex.com    | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | AMBULANCE_DRIVER
+ Ritu Malhotra       | ritu.ward@mednex.com        | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | WARD_MANAGER
+ Anil Desai          | anil.acc@mednex.com         | $2a$10$tlqgpvfIpTt9a8HpZwD.r.ybF/IPc4HgPIV8EbxmAnusg60n/4QOW | ACCOUNTANT
+(18 rows)
+
