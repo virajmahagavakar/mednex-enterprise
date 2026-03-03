@@ -45,10 +45,10 @@ public class Patient {
     @Column(unique = true, nullable = false)
     private String phone;
 
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    @Column(nullable = false)
+    @Column
     private String gender; // MALE, FEMALE, OTHER
 
     @Column(name = "blood_group")

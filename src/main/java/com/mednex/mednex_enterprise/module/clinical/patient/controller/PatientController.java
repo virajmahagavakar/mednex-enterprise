@@ -12,6 +12,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import com.mednex.mednex_enterprise.module.clinical.patient.dto.PatientProfileDTO;
+import com.mednex.mednex_enterprise.module.clinical.patient.dto.PatientProfileUpdateDTO;
 
 @RestController
 @RequestMapping("/api/clinical/patient-portal")
@@ -36,5 +40,19 @@ public class PatientController {
     public ResponseEntity<List<PatientAppointmentResponseDTO>> getPatientAppointments(Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
         return ResponseEntity.ok(patientService.getPatientAppointments(user));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<PatientProfileDTO> getPatientProfile(Authentication authentication) {
+        User user = getAuthenticatedUser(authentication);
+        return ResponseEntity.ok(patientService.getPatientProfile(user));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<Void> updatePatientProfile(@RequestBody PatientProfileUpdateDTO request,
+            Authentication authentication) {
+        User user = getAuthenticatedUser(authentication);
+        patientService.updatePatientProfile(user, request);
+        return ResponseEntity.ok().build();
     }
 }

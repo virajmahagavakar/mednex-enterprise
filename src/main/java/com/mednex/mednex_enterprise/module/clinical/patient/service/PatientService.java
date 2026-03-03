@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.mednex.mednex_enterprise.module.clinical.patient.dto.PatientAppointmentResponseDTO;
+import com.mednex.mednex_enterprise.module.clinical.patient.dto.PatientProfileDTO;
+import com.mednex.mednex_enterprise.module.clinical.patient.dto.PatientProfileUpdateDTO;
 import com.mednex.mednex_enterprise.core.entity.StaffProfile;
 import com.mednex.mednex_enterprise.core.repository.StaffProfileRepository;
 
@@ -74,5 +76,41 @@ public class PatientService {
                     .prescription(app.getPrescription())
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    public PatientProfileDTO getPatientProfile(User loggedInUser) {
+        Patient patient = getPatientByEmail(loggedInUser.getEmail());
+        return PatientProfileDTO.builder()
+                .firstName(patient.getFirstName())
+                .lastName(patient.getLastName())
+                .email(patient.getEmail())
+                .phone(patient.getPhone())
+                .dateOfBirth(patient.getDateOfBirth())
+                .gender(patient.getGender())
+                .bloodGroup(patient.getBloodGroup())
+                .address(patient.getAddress())
+                .emergencyContactName(patient.getEmergencyContactName())
+                .emergencyContactPhone(patient.getEmergencyContactPhone())
+                .medicalHistory(patient.getMedicalHistory())
+                .build();
+    }
+
+    public void updatePatientProfile(User loggedInUser, PatientProfileUpdateDTO dto) {
+        Patient patient = getPatientByEmail(loggedInUser.getEmail());
+        if (dto.getDateOfBirth() != null)
+            patient.setDateOfBirth(dto.getDateOfBirth());
+        if (dto.getGender() != null)
+            patient.setGender(dto.getGender());
+        if (dto.getBloodGroup() != null)
+            patient.setBloodGroup(dto.getBloodGroup());
+        if (dto.getAddress() != null)
+            patient.setAddress(dto.getAddress());
+        if (dto.getEmergencyContactName() != null)
+            patient.setEmergencyContactName(dto.getEmergencyContactName());
+        if (dto.getEmergencyContactPhone() != null)
+            patient.setEmergencyContactPhone(dto.getEmergencyContactPhone());
+        if (dto.getMedicalHistory() != null)
+            patient.setMedicalHistory(dto.getMedicalHistory());
+        patientRepository.save(patient);
     }
 }
