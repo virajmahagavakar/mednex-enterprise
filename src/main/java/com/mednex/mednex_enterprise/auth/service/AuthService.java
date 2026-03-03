@@ -7,6 +7,7 @@ import com.mednex.mednex_enterprise.multitenancy.master.Tenant;
 import com.mednex.mednex_enterprise.multitenancy.master.TenantRepository;
 import com.mednex.mednex_enterprise.security.service.JwtService;
 import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.core.repository.BranchRepository;
 import com.mednex.mednex_enterprise.core.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,14 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.mednex.mednex_enterprise.core.entity.Role;
+import com.mednex.mednex_enterprise.core.repository.RoleRepository;
+import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
+import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
+import com.mednex.mednex_enterprise.auth.dto.PatientRegistrationRequest;
+
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,11 +35,40 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final BranchRepository branchRepository;
+    private final RoleRepository roleRepository;
+    private final PatientRepository patientRepository;
 
     public AuthResponse authenticate(AuthRequest request) {
         // 1. Validate Tenant exists and is active in Master DB
-        Tenant tenant = tenantRepository.findById(request.getHospitalId())
-                .orElseThrow(() -> new RuntimeException("Hospital not found"));
+        Tenant tenant = tenantRepository.findById(request.getHospitalId()).orElse(null);
+
+        // If not found by exact ID, it might be a branch code. Let's search across all
+        // tenants.
+        if (tenant == null) {
+            List<Tenant> allTenants = tenantRepository.findAll();
+            for (Tenant t : allTenants) {
+                if (!t.isActive())
+                    continue;
+
+                try {
+                    TenantContext.setCurrentTenant(t.getTenantId());
+                    // See if this tenant has a branch with this code
+                    if (branchRepository.findByCode(request.getHospitalId()).isPresent()) {
+                        tenant = t;
+                        break;
+                    }
+                } catch (Exception e) {
+                    // Ignore if DB isn't ready or branch not found
+                } finally {
+                    TenantContext.clear();
+                }
+            }
+        }
+
+        if (tenant == null) {
+            throw new RuntimeException("Hospital not found");
+        }
 
         if (!tenant.isActive()) {
             throw new RuntimeException("Hospital account is inactive");
@@ -38,7 +76,7 @@ public class AuthService {
 
         // 2. Map context to Tenant DB and extract user
         try {
-            TenantContext.setCurrentTenant(request.getHospitalId());
+            TenantContext.setCurrentTenant(tenant.getTenantId());
 
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new RuntimeException("Invalid email or password"));
@@ -134,11 +172,61 @@ public class AuthService {
                         String accessToken = jwtService.generateToken(userDetails, extraClaims);
 
                         return com.mednex.mednex_enterprise.auth.dto.TokenRefreshResponse.builder()
-                                .accessToken(accessToken)
+                                .token(accessToken)
                                 .refreshToken(request.getRefreshToken())
+                                .hospitalId(request.getHospitalId())
                                 .build();
                     })
                     .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    public AuthResponse registerPatient(PatientRegistrationRequest request) {
+        Tenant tenant = tenantRepository.findById(request.getHospitalId())
+                .orElseThrow(() -> new RuntimeException("Hospital not found"));
+
+        if (!tenant.isActive()) {
+            throw new RuntimeException("Hospital account is inactive");
+        }
+
+        try {
+            TenantContext.setCurrentTenant(tenant.getTenantId());
+
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                throw new RuntimeException("Email already exists");
+            }
+
+            Role patientRole = roleRepository.findByName("PATIENT")
+                    .orElseThrow(() -> new RuntimeException("PATIENT role not found"));
+
+            User user = new User();
+            user.setEmail(request.getEmail());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setName(request.getFirstName() + " " + request.getLastName());
+            user.setRoles(Set.of(patientRole));
+            user.setActive(true);
+            userRepository.save(user);
+
+            // Also create or link the clinical Patient entity
+            Optional<Patient> existingPatient = patientRepository.findByEmail(request.getEmail());
+            if (existingPatient.isEmpty()) {
+                Patient newPatient = new Patient();
+                newPatient.setFirstName(request.getFirstName());
+                newPatient.setLastName(request.getLastName());
+                newPatient.setEmail(request.getEmail());
+                newPatient.setPhone(request.getPhoneNumber());
+                patientRepository.save(newPatient);
+            }
+
+            // Authenticate directly after registration
+            return authenticate(AuthRequest.builder()
+                    .email(request.getEmail())
+                    .password(request.getPassword())
+                    .hospitalId(request.getHospitalId())
+                    .build());
 
         } finally {
             TenantContext.clear();

@@ -2,6 +2,7 @@ package com.mednex.mednex_enterprise.auth.controller;
 
 import com.mednex.mednex_enterprise.auth.dto.AuthRequest;
 import com.mednex.mednex_enterprise.auth.dto.AuthResponse;
+import com.mednex.mednex_enterprise.auth.dto.PatientRegistrationRequest;
 import com.mednex.mednex_enterprise.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +23,14 @@ public class AuthController {
         return ResponseEntity.ok(authService.authenticate(request));
     }
 
+    @PostMapping("/register/patient")
+    public ResponseEntity<AuthResponse> registerPatient(@RequestBody PatientRegistrationRequest request) {
+        return ResponseEntity.ok(authService.registerPatient(request));
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<com.mednex.mednex_enterprise.auth.dto.TokenRefreshResponse> refreshToken(
             @RequestBody com.mednex.mednex_enterprise.auth.dto.RefreshRequest request) {
         return ResponseEntity.ok(authService.refreshToken(request));
     }
 }
-

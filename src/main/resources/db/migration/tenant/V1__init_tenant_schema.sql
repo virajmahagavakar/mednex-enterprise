@@ -70,7 +70,8 @@ INSERT INTO permissions (name, description) VALUES
 
 INSERT INTO roles (name, description) VALUES
 ('HOSPITAL_ADMIN', 'Administrator for the entire hospital'),
-('DOCTOR', 'Medical practitioner');
+('DOCTOR', 'Medical practitioner'),
+('BRANCH_ADMIN', 'Administrator for a specific hospital branch');
 
 -- Assign permissions to HOSPITAL_ADMIN
 INSERT INTO role_permissions (role_id, permission_id)
@@ -79,7 +80,7 @@ SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'HOSPITAL_ADMIN';
 -- Assign subset of permissions to DOCTOR
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p 
-WHERE r.name = 'DOCTOR' AND p.name IN ('CREATE_APPOINTMENT', 'VIEW_PATIENT', 'ACCESS_ICU_DASHBOARD');
+WHERE r.name = 'DOCTOR' AND p.name IN ('CREATE_APPOINTMENT', 'VIEW_PATIENT', 'ACCESS_ICU_DASHBOARD');\n\n-- Assign a subset of permissions to BRANCH_ADMIN\nINSERT INTO role_permissions (role_id, permission_id)\nSELECT r.id, p.id FROM roles r, permissions p \nWHERE r.name = 'BRANCH_ADMIN' AND p.name IN ('CREATE_APPOINTMENT', 'VIEW_PATIENT', 'ACCESS_ICU_DASHBOARD');
 
 -- Maintain existing patients table
 CREATE TABLE patients (

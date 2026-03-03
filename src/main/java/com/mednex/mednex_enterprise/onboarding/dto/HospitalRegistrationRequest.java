@@ -12,5 +12,6 @@ public class HospitalRegistrationRequest {
     private String adminName;
     private String password;
     private String subscriptionPlan;
+    private String subscriptionDuration;
+    private String parentTenantId;
 }
-

@@ -31,7 +31,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "primary_branch_id")
     private Branch primaryBranch;
 
@@ -63,4 +63,3 @@ public class User {
         updatedAt = LocalDateTime.now();
     }
 }
-

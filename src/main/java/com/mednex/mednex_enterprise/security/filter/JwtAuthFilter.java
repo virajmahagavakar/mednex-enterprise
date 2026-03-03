@@ -69,14 +69,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
+
+            filterChain.doFilter(request, response);
         } catch (Exception e) {
             // Token is invalid, expired, or malformed
             System.err.println("JWT Authentication Failed: " + e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + e.getMessage() + "\"}");
+            return;
         } finally {
             TenantContext.clear();
         }
-
-        filterChain.doFilter(request, response);
     }
 }
-

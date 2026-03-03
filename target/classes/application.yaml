@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: mednex-enterprise
-  jpa:
-    open-in-view: false

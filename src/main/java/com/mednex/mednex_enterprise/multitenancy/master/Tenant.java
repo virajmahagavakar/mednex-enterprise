@@ -27,6 +27,10 @@ public class Tenant {
 
     private String hospitalName;
     private String subscriptionPlan;
+    private String subscriptionDuration;
+    private LocalDateTime subscriptionEndDate;
+    private Double subscriptionCost;
+    private String parentTenantId;
     private boolean active;
 
     private String licenseNumber;
@@ -37,4 +41,3 @@ public class Tenant {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-

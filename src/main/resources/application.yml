@@ -6,7 +6,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/mednex_master_db
     username: postgres
-    password: password # Replace with your local postgres password
+    password: "00000000" # Replace with your local postgres password
     driver-class-name: org.postgresql.Driver
 
   # Custom configurations to ensure we don't automatically override manual Beans
