@@ -79,14 +79,16 @@ public class AuthService {
             TenantContext.setCurrentTenant(tenant.getTenantId());
 
             User user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                    .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid email or password"));
 
             if (!user.isActive()) {
                 throw new RuntimeException("User account is disabled");
             }
 
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                throw new RuntimeException("Invalid email or password");
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid email or password");
             }
 
             // 3. Generate detailed JWT token payload
@@ -185,8 +187,35 @@ public class AuthService {
     }
 
     public AuthResponse registerPatient(PatientRegistrationRequest request) {
-        Tenant tenant = tenantRepository.findById(request.getHospitalId())
-                .orElseThrow(() -> new RuntimeException("Hospital not found"));
+        String providedId = request.getHospitalId();
+        Tenant tenant = tenantRepository.findById(providedId).orElse(null);
+        String resolvedBranchCode = null;
+
+        if (tenant == null) {
+            List<Tenant> allTenants = tenantRepository.findAll();
+            for (Tenant t : allTenants) {
+                if (!t.isActive())
+                    continue;
+                try {
+                    TenantContext.setCurrentTenant(t.getTenantId());
+                    if (branchRepository.findByCode(providedId).isPresent()) {
+                        tenant = t;
+                        resolvedBranchCode = providedId;
+                        break;
+                    }
+                } catch (Exception e) {
+                } finally {
+                    TenantContext.clear();
+                }
+            }
+        } else {
+            // Provided direct Tenant ID, fallback to MAIN branch
+            resolvedBranchCode = "MAIN";
+        }
+
+        if (tenant == null) {
+            throw new RuntimeException("Hospital not found");
+        }
 
         if (!tenant.isActive()) {
             throw new RuntimeException("Hospital account is inactive");
@@ -218,6 +247,17 @@ public class AuthService {
                 newPatient.setLastName(request.getLastName());
                 newPatient.setEmail(request.getEmail());
                 newPatient.setPhone(request.getPhoneNumber());
+
+                // Assign branch
+                if (resolvedBranchCode != null) {
+                    branchRepository.findByCode(resolvedBranchCode).ifPresent(newPatient::setRegisteredBranch);
+                }
+
+                // If branch still null, try just finding any branch as safety fallback
+                if (newPatient.getRegisteredBranch() == null) {
+                    branchRepository.findAll().stream().findFirst().ifPresent(newPatient::setRegisteredBranch);
+                }
+
                 patientRepository.save(newPatient);
             }
 

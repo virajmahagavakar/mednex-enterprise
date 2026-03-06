@@ -10,6 +10,9 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class MednexEnterpriseApplication {
 
+
+    
+
     public static void main(String[] args) {
         SpringApplication.run(MednexEnterpriseApplication.class, args);
     }
