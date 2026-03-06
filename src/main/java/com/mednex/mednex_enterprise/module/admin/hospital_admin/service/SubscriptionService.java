@@ -1,6 +1,6 @@
-package com.mednex.mednex_enterprise.admin.service;
+package com.mednex.mednex_enterprise.module.admin.hospital_admin.service;
 
-import com.mednex.mednex_enterprise.admin.dto.SubscriptionResponse;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.SubscriptionResponse;
 import com.mednex.mednex_enterprise.multitenancy.context.TenantContext;
 import com.mednex.mednex_enterprise.multitenancy.master.Tenant;
 import com.mednex.mednex_enterprise.multitenancy.master.TenantRepository;

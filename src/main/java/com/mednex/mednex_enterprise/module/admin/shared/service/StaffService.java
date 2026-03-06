@@ -1,7 +1,7 @@
-package com.mednex.mednex_enterprise.admin.service;
+package com.mednex.mednex_enterprise.module.admin.shared.service;
 
-import com.mednex.mednex_enterprise.admin.dto.StaffRegistrationRequest;
-import com.mednex.mednex_enterprise.admin.dto.StaffResponse;
+import com.mednex.mednex_enterprise.module.admin.shared.dto.StaffRegistrationRequest;
+import com.mednex.mednex_enterprise.module.admin.shared.dto.StaffResponse;
 import com.mednex.mednex_enterprise.core.entity.Branch;
 import com.mednex.mednex_enterprise.core.entity.Role;
 import com.mednex.mednex_enterprise.core.entity.StaffProfile;

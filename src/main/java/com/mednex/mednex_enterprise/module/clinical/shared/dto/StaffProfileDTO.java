@@ -1,4 +1,4 @@
-package com.mednex.mednex_enterprise.admin.dto;
+package com.mednex.mednex_enterprise.module.clinical.shared.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

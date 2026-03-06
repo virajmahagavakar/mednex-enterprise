@@ -1,24 +1,53 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Maven build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-node_modules
-dist
-dist-ssr
-*.local
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+
+# VS Code
+.vscode/
+
+# OS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.txt
+build_output.txt
+compile_error.log
+compile_errors.txt
+payload.json
+
+# Frontend artifacts (frontend/ dir has its own .gitignore)
+node_modules/
+dist/
+dist-ssr/
+*.local
+eslint.config.js
+tsconfig*.json
+vite.config.ts
+package*.json
+index.html
+public/

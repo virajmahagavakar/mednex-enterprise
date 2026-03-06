@@ -1,8 +1,8 @@
-package com.mednex.mednex_enterprise.admin.controller;
+package com.mednex.mednex_enterprise.module.admin.hospital_admin.controller;
 
-import com.mednex.mednex_enterprise.admin.dto.BranchRequest;
-import com.mednex.mednex_enterprise.admin.dto.BranchResponse;
-import com.mednex.mednex_enterprise.admin.service.BranchService;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.BranchRequest;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.BranchResponse;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.service.BranchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

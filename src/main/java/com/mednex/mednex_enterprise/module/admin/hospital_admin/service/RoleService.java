@@ -1,6 +1,6 @@
-package com.mednex.mednex_enterprise.admin.service;
+package com.mednex.mednex_enterprise.module.admin.hospital_admin.service;
 
-import com.mednex.mednex_enterprise.admin.dto.RoleResponse;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.RoleResponse;
 import com.mednex.mednex_enterprise.core.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

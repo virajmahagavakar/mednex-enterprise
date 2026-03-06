@@ -1,6 +1,5 @@
 package com.mednex.mednex_enterprise.module.clinical.surgery.entity;
-
-import com.mednex.mednex_enterprise.module.admin.entity.User;
+import com.mednex.mednex_enterprise.core.entity.User;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import jakarta.persistence.*;
 import lombok.*;

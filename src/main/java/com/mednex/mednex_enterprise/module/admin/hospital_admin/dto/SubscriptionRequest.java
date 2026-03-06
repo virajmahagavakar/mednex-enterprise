@@ -1,4 +1,4 @@
-package com.mednex.mednex_enterprise.admin.dto;
+package com.mednex.mednex_enterprise.module.admin.hospital_admin.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

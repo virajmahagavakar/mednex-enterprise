@@ -1,7 +1,7 @@
-package com.mednex.mednex_enterprise.admin.controller;
+package com.mednex.mednex_enterprise.module.admin.hospital_admin.controller;
 
-import com.mednex.mednex_enterprise.admin.dto.SubscriptionResponse;
-import com.mednex.mednex_enterprise.admin.service.SubscriptionService;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.SubscriptionResponse;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +28,7 @@ public class SubscriptionController {
     @PostMapping("/renew")
     @PreAuthorize("hasAnyAuthority('HOSPITAL_ADMIN', 'BRANCH_ADMIN')")
     public ResponseEntity<SubscriptionResponse> renewSubscription(
-            @Valid @RequestBody com.mednex.mednex_enterprise.admin.dto.SubscriptionRequest request) {
+            @Valid @RequestBody com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.SubscriptionRequest request) {
         return ResponseEntity.ok(subscriptionService.renewSubscription(request.getDuration()));
     }
 }

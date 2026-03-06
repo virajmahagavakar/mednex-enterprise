@@ -1,6 +1,5 @@
 package com.mednex.mednex_enterprise.module.clinical.diagnostics.entity;
-
-import com.mednex.mednex_enterprise.module.admin.entity.User;
+import com.mednex.mednex_enterprise.core.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

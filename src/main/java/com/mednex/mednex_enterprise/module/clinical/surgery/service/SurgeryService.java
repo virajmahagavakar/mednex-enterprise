@@ -1,7 +1,7 @@
 package com.mednex.mednex_enterprise.module.clinical.surgery.service;
 
-import com.mednex.mednex_enterprise.module.admin.entity.User;
-import com.mednex.mednex_enterprise.module.admin.repository.UserRepository;
+import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
 import com.mednex.mednex_enterprise.module.clinical.surgery.dto.AnesthesiaNoteRequest;
@@ -76,7 +76,7 @@ public class SurgeryService {
     public SurgicalNote addSurgicalNote(UUID scheduleId, SurgicalNoteRequest request, String username) {
         SurgerySchedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Surgery not found"));
-        User author = userRepository.findByUsername(username)
+        User author = userRepository.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("Author not found"));
 
         SurgicalNote note = SurgicalNote.builder()
@@ -96,7 +96,7 @@ public class SurgeryService {
     public AnesthesiaNote addAnesthesiaNote(UUID scheduleId, AnesthesiaNoteRequest request, String username) {
         SurgerySchedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Surgery not found"));
-        User author = userRepository.findByUsername(username)
+        User author = userRepository.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("Author not found"));
 
         AnesthesiaNote note = AnesthesiaNote.builder()

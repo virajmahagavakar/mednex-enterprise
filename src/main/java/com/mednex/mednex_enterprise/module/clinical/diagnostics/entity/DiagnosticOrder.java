@@ -1,6 +1,6 @@
 package com.mednex.mednex_enterprise.module.clinical.diagnostics.entity;
 
-import com.mednex.mednex_enterprise.module.admin.entity.User;
+import com.mednex.mednex_enterprise.core.entity.User;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointment;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import jakarta.persistence.*;

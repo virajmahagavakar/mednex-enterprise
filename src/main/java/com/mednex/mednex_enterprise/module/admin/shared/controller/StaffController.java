@@ -1,8 +1,8 @@
-package com.mednex.mednex_enterprise.admin.controller;
+package com.mednex.mednex_enterprise.module.admin.shared.controller;
 
-import com.mednex.mednex_enterprise.admin.dto.StaffRegistrationRequest;
-import com.mednex.mednex_enterprise.admin.dto.StaffResponse;
-import com.mednex.mednex_enterprise.admin.service.StaffService;
+import com.mednex.mednex_enterprise.module.admin.shared.dto.StaffRegistrationRequest;
+import com.mednex.mednex_enterprise.module.admin.shared.dto.StaffResponse;
+import com.mednex.mednex_enterprise.module.admin.shared.service.StaffService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

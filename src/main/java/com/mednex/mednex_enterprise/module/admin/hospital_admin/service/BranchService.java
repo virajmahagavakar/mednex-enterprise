@@ -1,7 +1,7 @@
-package com.mednex.mednex_enterprise.admin.service;
+package com.mednex.mednex_enterprise.module.admin.hospital_admin.service;
 
-import com.mednex.mednex_enterprise.admin.dto.BranchRequest;
-import com.mednex.mednex_enterprise.admin.dto.BranchResponse;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.BranchRequest;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.BranchResponse;
 import com.mednex.mednex_enterprise.core.entity.Branch;
 import com.mednex.mednex_enterprise.core.repository.BranchRepository;
 import com.mednex.mednex_enterprise.core.repository.UserRepository;

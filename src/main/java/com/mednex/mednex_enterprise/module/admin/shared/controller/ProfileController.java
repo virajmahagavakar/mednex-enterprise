@@ -1,8 +1,8 @@
-package com.mednex.mednex_enterprise.admin.controller;
+package com.mednex.mednex_enterprise.module.admin.shared.controller;
 
-import com.mednex.mednex_enterprise.admin.dto.ProfileRequest;
-import com.mednex.mednex_enterprise.admin.dto.ProfileResponse;
-import com.mednex.mednex_enterprise.admin.service.ProfileService;
+import com.mednex.mednex_enterprise.module.admin.shared.dto.ProfileRequest;
+import com.mednex.mednex_enterprise.module.admin.shared.dto.ProfileResponse;
+import com.mednex.mednex_enterprise.module.admin.shared.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

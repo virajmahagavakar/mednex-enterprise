@@ -1,4 +1,4 @@
-package com.mednex.mednex_enterprise.admin.dto;
+package com.mednex.mednex_enterprise.module.admin.shared.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
+import com.mednex.mednex_enterprise.module.clinical.shared.dto.StaffProfileDTO;
 
 @Data
 @Builder

@@ -1,7 +1,7 @@
 package com.mednex.mednex_enterprise.module.clinical.diagnostics.service;
 
-import com.mednex.mednex_enterprise.module.admin.entity.User;
-import com.mednex.mednex_enterprise.module.admin.repository.UserRepository;
+import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointment;
 import com.mednex.mednex_enterprise.module.clinical.appointment.repository.AppointmentRepository;
 import com.mednex.mednex_enterprise.module.clinical.diagnostics.dto.DiagnosticOrderRequest;
@@ -40,7 +40,7 @@ public class DiagnosticService {
 
     @Transactional
     public DiagnosticOrder createOrder(DiagnosticOrderRequest request, String doctorUsername) {
-        User doctor = userRepository.findByUsername(doctorUsername)
+        User doctor = userRepository.findByEmail(doctorUsername)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
         Patient patient = patientRepository.findById(request.getPatientId())
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -90,7 +90,7 @@ public class DiagnosticService {
             throw new RuntimeException("Result already uploaded for this item.");
         }
 
-        User technician = userRepository.findByUsername(techUsername)
+        User technician = userRepository.findByEmail(techUsername)
                 .orElseThrow(() -> new RuntimeException("Technician not found"));
 
         DiagnosticResult result = DiagnosticResult.builder()

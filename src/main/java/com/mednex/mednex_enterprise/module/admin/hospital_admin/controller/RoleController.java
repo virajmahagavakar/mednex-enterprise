@@ -1,7 +1,7 @@
-package com.mednex.mednex_enterprise.admin.controller;
+package com.mednex.mednex_enterprise.module.admin.hospital_admin.controller;
 
-import com.mednex.mednex_enterprise.admin.dto.RoleResponse;
-import com.mednex.mednex_enterprise.admin.service.RoleService;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.RoleResponse;
+import com.mednex.mednex_enterprise.module.admin.hospital_admin.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
