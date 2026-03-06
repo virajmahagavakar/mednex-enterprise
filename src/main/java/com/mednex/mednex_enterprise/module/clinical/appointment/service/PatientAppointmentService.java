@@ -114,6 +114,10 @@ public class PatientAppointmentService {
             throw new IllegalStateException("The selected time slot is no longer available.");
         }
 
+        Integer maxToken = appointmentRepository.findMaxTokenNumberByDoctorAndDate(doctor.getId(), startOfDay,
+                endOfDay);
+        int nextToken = (maxToken != null ? maxToken : 0) + 1;
+
         Appointment appointment = Appointment.builder()
                 .patient(patient)
                 .doctor(doctor)
@@ -121,6 +125,8 @@ public class PatientAppointmentService {
                 .appointmentTime(request.getAppointmentTime())
                 .status(AppointmentStatus.SCHEDULED)
                 .reasonForVisit(request.getReasonForVisit())
+                .tokenNumber(nextToken)
+                .isWalkIn(false) // Online booked default
                 .build();
 
         appointmentRepository.save(appointment);

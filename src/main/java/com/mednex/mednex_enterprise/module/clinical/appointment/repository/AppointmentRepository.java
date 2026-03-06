@@ -28,4 +28,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
         @Query("SELECT COUNT(a) FROM Appointment a WHERE a.doctor.id = :doctorId AND a.status = :status")
         long countAppointmentsByDoctorAndStatus(@Param("doctorId") UUID doctorId,
                         @Param("status") AppointmentStatus status);
+
+        @Query("SELECT MAX(a.tokenNumber) FROM Appointment a WHERE a.doctor.id = :doctorId AND a.appointmentTime >= :startOfDay AND a.appointmentTime <= :endOfDay")
+        Integer findMaxTokenNumberByDoctorAndDate(@Param("doctorId") UUID doctorId,
+                        @Param("startOfDay") LocalDateTime startOfDay,
+                        @Param("endOfDay") LocalDateTime endOfDay);
 }

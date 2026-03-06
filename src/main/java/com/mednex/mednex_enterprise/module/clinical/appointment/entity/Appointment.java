@@ -44,6 +44,12 @@ public class Appointment {
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;
 
+    @Column(name = "token_number")
+    private Integer tokenNumber;
+
+    @Column(name = "is_walk_in")
+    private Boolean isWalkIn;
+
     @Column(name = "reason_for_visit", columnDefinition = "TEXT")
     private String reasonForVisit;
 
@@ -62,6 +68,9 @@ public class Appointment {
         updatedAt = LocalDateTime.now();
         if (status == null) {
             status = AppointmentStatus.SCHEDULED;
+        }
+        if (isWalkIn == null) {
+            isWalkIn = false;
         }
     }
 

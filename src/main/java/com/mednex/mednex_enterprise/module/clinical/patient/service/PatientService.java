@@ -74,6 +74,8 @@ public class PatientService {
                     .reasonForVisit(app.getReasonForVisit())
                     .notes(app.getNotes())
                     .prescription(app.getPrescription())
+                    .tokenNumber(app.getTokenNumber())
+                    .isWalkIn(app.getIsWalkIn())
                     .build();
         }).collect(Collectors.toList());
     }

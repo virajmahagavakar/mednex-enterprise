@@ -23,4 +23,6 @@ public class PatientAppointmentResponseDTO {
     private String reasonForVisit;
     private String notes;
     private String prescription;
+    private Integer tokenNumber;
+    private Boolean isWalkIn;
 }

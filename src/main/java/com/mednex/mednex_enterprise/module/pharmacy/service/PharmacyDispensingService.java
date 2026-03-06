@@ -12,6 +12,13 @@ import com.mednex.mednex_enterprise.module.pharmacy.repository.DispensedItemRepo
 import com.mednex.mednex_enterprise.module.pharmacy.repository.InventoryBatchRepository;
 import com.mednex.mednex_enterprise.module.pharmacy.repository.MedicineRepository;
 import com.mednex.mednex_enterprise.module.pharmacy.repository.PharmacyPrescriptionRepository;
+import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
+import com.mednex.mednex_enterprise.module.pharmacy.dto.CreatePrescriptionRequest;
+import com.mednex.mednex_enterprise.module.pharmacy.dto.CreatePrescriptionItemRequest;
+import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
+import com.mednex.mednex_enterprise.module.pharmacy.entity.Medicine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +41,8 @@ public class PharmacyDispensingService {
     private final InventoryBatchRepository batchRepository;
     private final MedicineRepository medicineRepository;
     private final PharmacyInventoryService inventoryService;
+    private final PatientRepository patientRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<PharmacyPrescriptionDTO> getPendingPrescriptions() {
@@ -41,6 +50,41 @@ public class PharmacyDispensingService {
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public PharmacyPrescriptionDTO createPrescription(UUID doctorId, CreatePrescriptionRequest request) {
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new PharmacyServiceException("Doctor not found"));
+
+        Patient patient = patientRepository.findById(request.getPatientId())
+                .orElseThrow(() -> new PharmacyServiceException("Patient not found"));
+
+        PharmacyPrescription prescription = PharmacyPrescription.builder()
+                .doctor(doctor)
+                .patient(patient)
+                .appointmentId(request.getAppointmentId())
+                .status(PharmacyPrescription.PrescriptionStatus.PENDING)
+                .paymentStatus(PharmacyPrescription.PaymentStatus.UNPAID)
+                .build();
+
+        for (CreatePrescriptionItemRequest itemReq : request.getItems()) {
+            Medicine medicine = medicineRepository.findById(itemReq.getMedicineId())
+                    .orElseThrow(() -> new PharmacyServiceException("Medicine not found"));
+
+            DispensedItem item = DispensedItem.builder()
+                    .prescription(prescription)
+                    .medicine(medicine)
+                    .prescribedQuantity(itemReq.getPrescribedQuantity())
+                    .dispensedQuantity(0)
+                    .dosageInstructions(itemReq.getDosageInstructions())
+                    .totalPrice(BigDecimal.ZERO)
+                    .build();
+
+            prescription.addDispensedItem(item);
+        }
+
+        return mapToDto(prescriptionRepository.save(prescription));
     }
 
     @Transactional

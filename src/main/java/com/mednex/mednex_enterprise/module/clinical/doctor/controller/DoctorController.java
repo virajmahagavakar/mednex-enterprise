@@ -3,6 +3,8 @@ package com.mednex.mednex_enterprise.module.clinical.doctor.controller;
 import com.mednex.mednex_enterprise.core.entity.User;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentUpdateRequest;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.ClinicalNoteResponse;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.CreateClinicalNoteRequest;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DoctorDashboardStatsDTO;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.PatientResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.service.DoctorService;
@@ -73,5 +75,20 @@ public class DoctorController {
                         .build())
                 .collect(Collectors.toList());
         return ResponseEntity.ok(patients);
+    }
+
+    @PostMapping("/appointments/{id}/notes")
+    public ResponseEntity<ClinicalNoteResponse> createClinicalNote(
+            @AuthenticationPrincipal User doctor,
+            @PathVariable UUID id,
+            @RequestBody CreateClinicalNoteRequest request) {
+        return ResponseEntity.ok(doctorService.createClinicalNote(doctor.getId(), id, request));
+    }
+
+    @GetMapping("/patients/{patientId}/emr")
+    public ResponseEntity<List<ClinicalNoteResponse>> getPatientEMR(
+            @AuthenticationPrincipal User doctor,
+            @PathVariable UUID patientId) {
+        return ResponseEntity.ok(doctorService.getClinicalNotesForPatientAsDoctor(doctor.getId(), patientId));
     }
 }

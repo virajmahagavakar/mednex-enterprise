@@ -16,7 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/pharmacy/inventory")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('PHARMACIST', 'ADMIN')")
+@PreAuthorize("hasRole('PHARMACIST')")
 public class PharmacyInventoryController {
 
     private final PharmacyInventoryService inventoryService;

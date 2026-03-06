@@ -8,6 +8,10 @@ import com.mednex.mednex_enterprise.module.clinical.appointment.repository.Appoi
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentUpdateRequest;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DoctorDashboardStatsDTO;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.ClinicalNoteResponse;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.CreateClinicalNoteRequest;
+import com.mednex.mednex_enterprise.module.clinical.doctor.entity.ClinicalNote;
+import com.mednex.mednex_enterprise.module.clinical.doctor.repository.ClinicalNoteRepository;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,7 @@ public class DoctorService {
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final ClinicalNoteRepository clinicalNoteRepository;
 
     public DoctorDashboardStatsDTO getDashboardStats(UUID doctorId) {
         // In a real application, total patients might be calculated uniquely.
@@ -110,6 +115,57 @@ public class DoctorService {
         return patientRepository.findByRegisteredBranchId(doctor.getPrimaryBranch().getId());
     }
 
+    @Transactional
+    public ClinicalNoteResponse createClinicalNote(UUID doctorId, UUID appointmentId,
+            CreateClinicalNoteRequest request) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .filter(a -> a.getDoctor().getId().equals(doctorId))
+                .orElseThrow(() -> new RuntimeException("Appointment not found or not authorized"));
+
+        ClinicalNote note = ClinicalNote.builder()
+                .patient(appointment.getPatient())
+                .appointment(appointment)
+                .doctor(appointment.getDoctor())
+                .subjective(request.getSubjective())
+                .objective(request.getObjective())
+                .assessment(request.getAssessment())
+                .plan(request.getPlan())
+                .followUpDate(request.getFollowUpDate())
+                .build();
+
+        ClinicalNote savedNote = clinicalNoteRepository.save(note);
+        return mapToClinicalNoteResponse(savedNote);
+    }
+
+    public List<ClinicalNoteResponse> getClinicalNotesForPatient(UUID patientId) {
+        return clinicalNoteRepository.findByPatientIdOrderByCreatedAtDesc(patientId)
+                .stream()
+                .map(this::mapToClinicalNoteResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ClinicalNoteResponse> getClinicalNotesForPatientAsDoctor(UUID doctorId, UUID patientId) {
+        // Here we could add a check if the doctor is authorized to view this patient's
+        // records
+        return getClinicalNotesForPatient(patientId);
+    }
+
+    private ClinicalNoteResponse mapToClinicalNoteResponse(ClinicalNote note) {
+        return ClinicalNoteResponse.builder()
+                .id(note.getId())
+                .patientId(note.getPatient().getId())
+                .appointmentId(note.getAppointment().getId())
+                .doctorId(note.getDoctor().getId())
+                .doctorName(note.getDoctor().getName())
+                .subjective(note.getSubjective())
+                .objective(note.getObjective())
+                .assessment(note.getAssessment())
+                .plan(note.getPlan())
+                .followUpDate(note.getFollowUpDate())
+                .createdAt(note.getCreatedAt())
+                .build();
+    }
+
     private AppointmentResponse mapToAppointmentResponse(Appointment appointment) {
         return AppointmentResponse.builder()
                 .id(appointment.getId())
@@ -119,6 +175,8 @@ public class DoctorService {
                 .status(appointment.getStatus())
                 .reasonForVisit(appointment.getReasonForVisit())
                 .notes(appointment.getNotes())
+                .tokenNumber(appointment.getTokenNumber())
+                .isWalkIn(appointment.getIsWalkIn())
                 .build();
     }
 }

@@ -21,4 +21,6 @@ public class AppointmentResponse {
     private AppointmentStatus status;
     private String reasonForVisit;
     private String notes;
+    private Integer tokenNumber;
+    private Boolean isWalkIn;
 }
