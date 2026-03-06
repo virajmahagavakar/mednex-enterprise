@@ -7,6 +7,12 @@ import Branches from './pages/admin/Branches';
 import Staff from './pages/admin/Staff';
 import Subscription from './pages/admin/Subscription';
 
+import PharmacyDashboard from './pages/pharmacy/PharmacyDashboard';
+import InventoryManagement from './pages/pharmacy/InventoryManagement';
+import SupplierManagement from './pages/pharmacy/SupplierManagement';
+import DispensingStation from './pages/pharmacy/DispensingStation';
+import PharmacistLayout from './components/pharmacist/PharmacistLayout';
+
 import DoctorLayout from './components/doctor/DoctorLayout';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import Patients from './pages/doctor/Patients';
@@ -16,6 +22,13 @@ import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard';
 
 import NurseLayout from './components/nurse/NurseLayout';
 import NurseDashboard from './pages/nurse/NurseDashboard';
+
+import PatientRegistration from './pages/auth/PatientRegistration';
+import PatientLayout from './components/patient/PatientLayout';
+import PatientDashboard from './pages/patient/PatientDashboard';
+import AppointmentBookingWizard from './pages/patient/AppointmentBookingWizard';
+import MedicalRecords from './pages/patient/MedicalRecords';
+import PatientProfile from './pages/patient/PatientProfile';
 
 function App() {
   return (
@@ -32,6 +45,15 @@ function App() {
           <Route path="staff" element={<Staff />} />
           <Route path="subscription" element={<Subscription />} />
           <Route path="settings" element={<div style={{ padding: '2rem' }}><h2>Settings Coming Soon</h2></div>} />
+        </Route>
+
+        {/* Pharmacist Routes */}
+        <Route path="/pharmacist" element={<PharmacistLayout />}>
+          <Route index element={<Navigate to="/pharmacist/dashboard" replace />} />
+          <Route path="dashboard" element={<PharmacyDashboard />} />
+          <Route path="inventory" element={<InventoryManagement />} />
+          <Route path="suppliers" element={<SupplierManagement />} />
+          <Route path="dispense" element={<DispensingStation />} />
         </Route>
 
         {/* Doctor Routes */}
@@ -55,6 +77,18 @@ function App() {
           <Route index element={<Navigate to="/nurse/dashboard" replace />} />
           <Route path="dashboard" element={<NurseDashboard />} />
           <Route path="wards" element={<div style={{ padding: '2rem' }}><h2>Wards & Vitals Coming Soon</h2></div>} />
+        </Route>
+
+        <Route path="/register/patient" element={<PatientRegistration />} />
+
+        {/* Patient Portal Routes */}
+        <Route path="/patient-portal" element={<PatientLayout />}>
+          <Route index element={<Navigate to="/patient-portal/dashboard" replace />} />
+          <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="profile" element={<PatientProfile />} />
+          <Route path="book-appointment" element={<AppointmentBookingWizard />} />
+          <Route path="appointments" element={<div style={{ padding: '2rem' }}><h2>Appointments Coming Soon</h2></div>} />
+          <Route path="records" element={<MedicalRecords />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/login" replace />} />

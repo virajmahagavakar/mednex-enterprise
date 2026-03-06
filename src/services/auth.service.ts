@@ -9,6 +9,12 @@ export const AuthService = {
         return response.data;
     },
 
+    registerPatient: async (request: any): Promise<AuthResponse> => {
+        const response = await publicApiClient.post<AuthResponse>('/auth/register/patient', request);
+        TokenService.setTokens(response.data);
+        return response.data;
+    },
+
     logout: () => {
         TokenService.clearTokens();
     }

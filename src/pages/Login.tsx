@@ -47,6 +47,8 @@ const Login = () => {
                     navigate('/receptionist');
                 } else if (isNurse) {
                     navigate('/nurse');
+                } else if (roles.includes('PATIENT')) {
+                    navigate('/patient-portal');
                 } else {
                     navigate('/admin');
                 }
@@ -154,8 +156,9 @@ const Login = () => {
                 </button>
             </form>
 
-            <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                Don't have an enterprise account? <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }} style={{ fontWeight: 600 }}>Register Hospital</a>
+            <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div>Are you a Patient? <a href="/register/patient" onClick={(e) => { e.preventDefault(); navigate('/register/patient'); }} style={{ fontWeight: 600, color: 'var(--primary)' }}>Sign up here</a></div>
+                <div>Don't have an enterprise account? <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }} style={{ fontWeight: 600 }}>Register Hospital</a></div>
             </div>
 
             <style>

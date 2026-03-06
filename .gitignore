@@ -1,80 +1,24 @@
-####################################
-# Maven
-####################################
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-
-####################################
-# Compiled class files
-####################################
-*.class
-
-####################################
-# Packaged files
-####################################
-*.jar
-*.war
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-####################################
 # Logs
-####################################
+logs
 *.log
-logs/
-hs_err_pid*
-replay_pid*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-####################################
-# IntelliJ IDEA
-####################################
-.idea/
-*.iml
-*.iws
-out/
+node_modules
+dist
+dist-ssr
+*.local
 
-####################################
-# VS Code
-####################################
-.vscode/
+# Editor directories and files
+.vscode/*
 !.vscode/extensions.json
-
-####################################
-# Eclipse (if ever used)
-####################################
-.project
-.classpath
-.settings/
-
-####################################
-# OS Files
-####################################
+.idea
 .DS_Store
-Thumbs.db
-desktop.ini
-
-####################################
-# Spring Boot
-####################################
-spring.log
-
-####################################
-# Test output
-####################################
-surefire-reports/
-failsafe-reports/
-
-####################################
-# Temporary files
-####################################
-*.tmp
-*.swp
-*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
