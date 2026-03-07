@@ -11,7 +11,7 @@ import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointme
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.AppointmentStatus;
 import com.mednex.mednex_enterprise.module.clinical.appointment.repository.AppointmentRepository;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
-import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
+import com.mednex.mednex_enterprise.module.clinical.patient.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,8 +31,8 @@ public class PatientAppointmentService {
 
     private final StaffProfileRepository staffProfileRepository;
     private final AppointmentRepository appointmentRepository;
-    private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final PatientService patientService;
 
     public List<String> getAvailableSpecializations() {
         return staffProfileRepository.findDistinctDoctorSpecializations();
@@ -92,8 +92,7 @@ public class PatientAppointmentService {
 
     @Transactional
     public void bookAppointment(User currentUser, AppointmentBookingRequest request) {
-        Patient patient = patientRepository.findByUser(currentUser)
-                .orElseThrow(() -> new IllegalArgumentException("Patient profile not found."));
+        Patient patient = patientService.getOrCreatePatient(currentUser);
 
         User doctor = userRepository.findById(request.getDoctorId())
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
