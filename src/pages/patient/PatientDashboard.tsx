@@ -1,29 +1,65 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Activity, FileText } from 'lucide-react';
+import { PatientService } from '../../services/patient.service';
+import type { PatientAppointmentResponseDTO } from '../../services/api.types';
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({
         upcomingAppointments: 0,
         totalPrescriptions: 0,
-        unreadMessages: 0,
-        nextAppointmentDate: null
+        labReports: 0,
     });
+    const [nextAppointment, setNextAppointment] = useState<PatientAppointmentResponseDTO | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Will fetch actual stats here
-        setTimeout(() => {
-            setStats({
-                upcomingAppointments: 1,
-                totalPrescriptions: 2,
-                unreadMessages: 0,
-                nextAppointmentDate: null
-            });
-            setIsLoading(false);
-        }, 800);
+        loadDashboardData();
     }, []);
+
+    const loadDashboardData = async () => {
+        try {
+            const [dashStats, appointments] = await Promise.all([
+                PatientService.getDashboardStats().catch(() => null),
+                PatientService.getPatientAppointments().catch(() => [] as PatientAppointmentResponseDTO[]),
+            ]);
+
+            if (dashStats) {
+                setStats({
+                    upcomingAppointments: dashStats.upcomingAppointments ?? 0,
+                    totalPrescriptions: dashStats.pendingPrescriptions ?? 0,
+                    labReports: dashStats.recentLabResults ?? 0,
+                });
+            }
+
+            // Find the next upcoming appointment (earliest future one)
+            const now = new Date();
+            const upcoming = (appointments as PatientAppointmentResponseDTO[])
+                .filter(a => new Date(a.appointmentTime) > now && a.status !== 'CANCELLED')
+                .sort((a, b) => new Date(a.appointmentTime).getTime() - new Date(b.appointmentTime).getTime());
+
+            setNextAppointment(upcoming[0] ?? null);
+            if (!dashStats) {
+                setStats(prev => ({ ...prev, upcomingAppointments: upcoming.length }));
+            }
+        } catch (err) {
+            console.error('Dashboard load error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const formatAppointmentTime = (isoString: string) => {
+        const date = new Date(isoString);
+        return date.toLocaleString('en-US', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
 
     if (isLoading) {
         return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading your dashboard...</div>;
@@ -66,7 +102,7 @@ const PatientDashboard = () => {
                         <Activity size={24} color="#0284C7" />
                     </div>
                     <div>
-                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{stats.unreadMessages}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{stats.labReports}</div>
                         <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Lab Reports</div>
                     </div>
                 </div>
@@ -79,16 +115,16 @@ const PatientDashboard = () => {
                         <Clock size={20} /> Next Appointment
                     </h2>
 
-                    {stats.upcomingAppointments > 0 ? (
+                    {nextAppointment ? (
                         <div style={{ padding: '1.5rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>Dr. Sarah Jenkins</div>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>General Checkup</div>
+                                <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>{nextAppointment.doctorName ?? 'Your Doctor'}</div>
+                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{nextAppointment.reasonForVisit ?? 'Consultation'}</div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', color: 'var(--primary-dark)', fontSize: '0.875rem', fontWeight: 500 }}>
-                                    <Calendar size={14} /> Thursday, 14 Oct • 10:30 AM
+                                    <Calendar size={14} /> {formatAppointmentTime(nextAppointment.appointmentTime)}
                                 </div>
                             </div>
-                            <button className="btn-accent" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Reschedule</button>
+                            <button className="btn-accent" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} onClick={() => navigate('/patient-portal/appointments')}>View</button>
                         </div>
                     ) : (
                         <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-lg)' }}>
