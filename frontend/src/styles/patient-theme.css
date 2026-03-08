@@ -1,0 +1,149 @@
+/* 
+  Patient Portal Theme
+  Palette: Beige Green (A0C49D) & Light Purple (C4B0FF)
+*/
+
+.patient-theme {
+    /* Base Backgrounds */
+    --bg-main: #F7F8F3;
+    /* Warm, calming off-white/beige */
+    --bg-surface: #FFFFFF;
+
+    /* Primary Color (Healing Green) */
+    --primary: #8BAD89;
+    --primary-light: #E0EBE0;
+    --primary-dark: #6B8E6A;
+    --primary-hover: #7AA179;
+
+    /* Secondary/Accent (Light Purple) */
+    --accent: #C4B0FF;
+    --accent-light: #F0EBFF;
+    --accent-dark: #9A7CFF;
+
+    /* Borders */
+    --border: #D1D5DB;
+    --border-light: #E5E7EB;
+
+    /* Status Colors */
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #3B82F6;
+
+    /* Theme Overrides for standard elements */
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+/* Patient Specific Button Overrides */
+.patient-theme .btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.patient-theme .btn-primary:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 4px 12px rgba(139, 173, 137, 0.3);
+}
+
+.patient-theme .btn-outline {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.patient-theme .btn-outline:hover {
+    background-color: var(--primary-light);
+}
+
+.patient-theme .btn-accent {
+    background-color: var(--accent);
+    color: #1E1E1E;
+    /* Dark text for contrast on light purple */
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.patient-theme .btn-accent:hover {
+    background-color: var(--accent-dark);
+    color: white;
+    box-shadow: 0 4px 12px rgba(196, 176, 255, 0.4);
+}
+
+/* Patient Layout Components */
+.patient-theme .card {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border-radius: var(--radius-xl);
+}
+
+.patient-topbar {
+    background-color: var(--bg-surface);
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.patient-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    text-decoration: none;
+}
+
+.patient-nav {
+    display: flex;
+    gap: 2rem;
+}
+
+.patient-nav a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    position: relative;
+}
+
+.patient-nav a:hover,
+.patient-nav a.active {
+    color: var(--primary-dark);
+}
+
+.patient-nav a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--primary);
+    border-radius: 2px 2px 0 0;
+}
+
+.patient-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Premium gradient utility for patient portal */
+.bg-gradient-healing {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--accent-light) 100%);
+}
