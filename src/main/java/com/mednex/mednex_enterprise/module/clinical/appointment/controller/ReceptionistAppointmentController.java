@@ -14,7 +14,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/receptionist/appointments")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN')")
+@PreAuthorize("hasAnyRole('RECEPTIONIST', 'HOSPITAL_ADMIN')")
 public class ReceptionistAppointmentController {
 
     private final ReceptionistAppointmentService receptionistAppointmentService;
@@ -24,14 +24,14 @@ public class ReceptionistAppointmentController {
         return ResponseEntity.ok(receptionistAppointmentService.getRequestedAppointments());
     }
 
-    @GetMapping("/today")
-    public ResponseEntity<List<Appointment>> getTodayAppointments() {
-        return ResponseEntity.ok(receptionistAppointmentService.getAllAppointmentsForToday());
+    @GetMapping("/pending")
+    public ResponseEntity<List<Appointment>> getPendingAppointments() {
+        return ResponseEntity.ok(receptionistAppointmentService.getPendingAppointments());
     }
 
-    @PostMapping("/{id}/approve")
-    public ResponseEntity<Appointment> approveAppointment(@PathVariable UUID id) {
-        return ResponseEntity.ok(receptionistAppointmentService.approveAppointment(id));
+    @GetMapping("/today")
+    public ResponseEntity<List<Appointment>> getTodayAppointments() {
+        return ResponseEntity.ok(receptionistAppointmentService.getTodayAppointments());
     }
 
     @PutMapping("/{id}/triage")
@@ -41,12 +41,12 @@ public class ReceptionistAppointmentController {
         return ResponseEntity.ok(receptionistAppointmentService.triageAppointment(id, triageRequest));
     }
 
-    @PostMapping("/{id}/check-in")
+    @PutMapping("/{id}/check-in")
     public ResponseEntity<Appointment> checkInPatient(@PathVariable UUID id) {
         return ResponseEntity.ok(receptionistAppointmentService.checkInPatient(id));
     }
 
-    @PostMapping("/{id}/cancel")
+    @PutMapping("/{id}/cancel")
     public ResponseEntity<Appointment> cancelAppointment(
             @PathVariable UUID id,
             @RequestParam String reason) {

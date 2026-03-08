@@ -13,20 +13,20 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/admin/subscription")
+@RequestMapping("/api/v1/admin/subscription")
 @RequiredArgsConstructor
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
     @GetMapping("/status")
-    @PreAuthorize("hasAnyAuthority('HOSPITAL_ADMIN', 'BRANCH_ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'BRANCH_ADMIN')")
     public ResponseEntity<SubscriptionResponse> getSubscriptionStatus() {
         return ResponseEntity.ok(subscriptionService.getSubscriptionStatus());
     }
 
     @PostMapping("/renew")
-    @PreAuthorize("hasAnyAuthority('HOSPITAL_ADMIN', 'BRANCH_ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'BRANCH_ADMIN')")
     public ResponseEntity<SubscriptionResponse> renewSubscription(
             @Valid @RequestBody com.mednex.mednex_enterprise.module.admin.hospital_admin.dto.SubscriptionRequest request) {
         return ResponseEntity.ok(subscriptionService.renewSubscription(request.getDuration()));

@@ -4,6 +4,7 @@ import com.mednex.mednex_enterprise.core.entity.Branch;
 import com.mednex.mednex_enterprise.core.entity.User;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,21 +29,25 @@ public class Appointment {
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
-    // Doctor is a User with DOCTOR role
+    // Doctor is assigned later during triage
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doctor_id", nullable = false)
+    @JoinColumn(name = "doctor_id", nullable = true)
     private User doctor;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branch_id", nullable = false)
+    @JoinColumn(name = "branch_id", nullable = true)
     private Branch branch;
 
-    @Column(name = "appointment_time", nullable = false)
+    @Column(name = "appointment_time", nullable = true)
     private LocalDateTime appointmentTime;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;
+
+    @Column(name = "urgency_level")
+    @Enumerated(EnumType.STRING)
+    private UrgencyLevel urgencyLevel;
 
     @Column(name = "token_number")
     private Integer tokenNumber;
@@ -52,6 +57,18 @@ public class Appointment {
 
     @Column(name = "reason_for_visit", columnDefinition = "TEXT")
     private String reasonForVisit;
+
+    @Column(columnDefinition = "TEXT")
+    private String symptoms;
+
+    @Column(name = "problem_description", columnDefinition = "TEXT")
+    private String problemDescription;
+
+    @Column(name = "department_preference")
+    private String departmentPreference;
+
+    @Column(name = "preferred_date")
+    private LocalDateTime preferredDate;
 
     @Column(columnDefinition = "TEXT")
     private String notes; // Doctor's notes
@@ -67,7 +84,7 @@ public class Appointment {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (status == null) {
-            status = AppointmentStatus.SCHEDULED;
+            status = AppointmentStatus.REQUESTED;
         }
         if (isWalkIn == null) {
             isWalkIn = false;

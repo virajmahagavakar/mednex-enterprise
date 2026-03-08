@@ -2,7 +2,7 @@ package com.mednex.mednex_enterprise.module.clinical.appointment.controller;
 
 import com.mednex.mednex_enterprise.core.entity.User;
 import com.mednex.mednex_enterprise.core.repository.UserRepository;
-import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AppointmentBookingRequest;
+import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AppointmentRequestDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AvailableSlotDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.DoctorInfoDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.service.PatientAppointmentService;
@@ -46,11 +46,11 @@ public class PatientAppointmentController {
         return ResponseEntity.ok(appointmentService.getAvailableSlots(doctorId, date));
     }
 
-    @PostMapping("/book")
-    public ResponseEntity<String> bookAppointment(Authentication authentication,
-            @RequestBody AppointmentBookingRequest request) {
+    @PostMapping("/request")
+    public ResponseEntity<String> requestAppointment(Authentication authentication,
+            @RequestBody AppointmentRequestDTO request) {
         User user = getAuthenticatedUser(authentication);
-        appointmentService.bookAppointment(user, request);
-        return ResponseEntity.ok("Appointment successfully booked.");
+        appointmentService.requestAppointment(user, request);
+        return ResponseEntity.ok("Appointment request submitted successfully.");
     }
 }

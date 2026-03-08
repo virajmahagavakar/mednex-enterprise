@@ -29,7 +29,7 @@ public class OperationTheatre {
     @Column(name = "equipment_notes", columnDefinition = "TEXT")
     private String equipmentNotes;
 
-    @Column(name = "is_active")
+    @Column(name = "active")
     @Builder.Default
     private boolean active = true;
 

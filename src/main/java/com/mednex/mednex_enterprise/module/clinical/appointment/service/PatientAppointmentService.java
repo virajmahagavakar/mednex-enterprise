@@ -1,10 +1,12 @@
 package com.mednex.mednex_enterprise.module.clinical.appointment.service;
 
+import com.mednex.mednex_enterprise.core.entity.Branch;
 import com.mednex.mednex_enterprise.core.entity.StaffProfile;
 import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.core.repository.BranchRepository;
 import com.mednex.mednex_enterprise.core.repository.StaffProfileRepository;
 import com.mednex.mednex_enterprise.core.repository.UserRepository;
-import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AppointmentBookingRequest;
+import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AppointmentRequestDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AvailableSlotDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.DoctorInfoDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointment;
@@ -32,6 +34,7 @@ public class PatientAppointmentService {
     private final StaffProfileRepository staffProfileRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
+    private final BranchRepository branchRepository;
     private final PatientService patientService;
 
     public List<String> getAvailableSpecializations() {
@@ -91,41 +94,22 @@ public class PatientAppointmentService {
     }
 
     @Transactional
-    public void bookAppointment(User currentUser, AppointmentBookingRequest request) {
-        Patient patient = patientService.getOrCreatePatient(currentUser);
-
-        User doctor = userRepository.findById(request.getDoctorId())
-                .orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
-
-        // Check if slot is already booked
-        LocalDateTime startOfDay = request.getAppointmentTime().toLocalDate().atTime(0, 0);
-        LocalDateTime endOfDay = request.getAppointmentTime().toLocalDate().atTime(23, 59, 59);
-
-        List<Appointment> existingAppointments = appointmentRepository
-                .findByDoctorIdAndAppointmentTimeBetweenOrderByAppointmentTimeAsc(
-                        doctor.getId(), startOfDay, endOfDay);
-
-        boolean isSlotTaken = existingAppointments.stream()
-                .anyMatch(app -> app.getAppointmentTime().equals(request.getAppointmentTime()) &&
-                        app.getStatus() != AppointmentStatus.CANCELLED);
-
-        if (isSlotTaken) {
-            throw new IllegalStateException("The selected time slot is no longer available.");
+    public void requestAppointment(User currentUser, AppointmentRequestDTO request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Appointment request cannot be null");
         }
 
-        Integer maxToken = appointmentRepository.findMaxTokenNumberByDoctorAndDate(doctor.getId(), startOfDay,
-                endOfDay);
-        int nextToken = (maxToken != null ? maxToken : 0) + 1;
+        Patient patient = patientService.getOrCreatePatient(currentUser);
 
         Appointment appointment = Appointment.builder()
                 .patient(patient)
-                .doctor(doctor)
-                .branch(doctor.getPrimaryBranch() != null ? doctor.getPrimaryBranch() : patient.getRegisteredBranch())
-                .appointmentTime(request.getAppointmentTime())
-                .status(AppointmentStatus.SCHEDULED)
-                .reasonForVisit(request.getReasonForVisit())
-                .tokenNumber(nextToken)
-                .isWalkIn(false) // Online booked default
+                .symptoms(request.getSymptoms())
+                .problemDescription(request.getProblemDescription())
+                .preferredDate(request.getPreferredDate() != null ? request.getPreferredDate().atStartOfDay() : null)
+                .urgencyLevel(request.getUrgencyLevel())
+                .departmentPreference(request.getDepartmentPreference())
+                .status(AppointmentStatus.REQUESTED)
+                .isWalkIn(false)
                 .build();
 
         appointmentRepository.save(appointment);

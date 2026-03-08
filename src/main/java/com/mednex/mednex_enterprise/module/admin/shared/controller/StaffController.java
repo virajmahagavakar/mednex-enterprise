@@ -17,21 +17,21 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/staff")
+@RequestMapping("/api/v1/admin/staff")
 @RequiredArgsConstructor
 public class StaffController {
 
     private final StaffService staffService;
 
     @PostMapping("/onboard")
-    @PreAuthorize("hasAuthority('BRANCH_ADMIN') or hasAuthority('HOSPITAL_ADMIN')")
+    @PreAuthorize("hasAnyRole('BRANCH_ADMIN', 'HOSPITAL_ADMIN')")
     public ResponseEntity<StaffResponse> onboardStaff(@Valid @RequestBody StaffRegistrationRequest request) {
         StaffResponse response = staffService.onboardStaff(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('BRANCH_ADMIN') or hasAuthority('HOSPITAL_ADMIN')")
+    @PreAuthorize("hasAnyRole('BRANCH_ADMIN', 'HOSPITAL_ADMIN')")
     public ResponseEntity<List<StaffResponse>> getAllStaff() {
         return ResponseEntity.ok(staffService.getAllStaff());
     }
