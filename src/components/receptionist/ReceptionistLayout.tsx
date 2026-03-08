@@ -6,7 +6,10 @@ import {
     LogOut,
     LayoutDashboard,
     Menu,
-    UserCircle
+    UserCircle,
+    Activity,
+    BedDouble,
+    Clock
 } from 'lucide-react';
 import { AuthService } from '../../services/auth.service';
 import { TokenService } from '../../services/api.client';
@@ -63,6 +66,9 @@ const ReceptionistLayout = () => {
     const navItems = [
         { name: 'Dashboard', path: '/receptionist/dashboard', icon: <LayoutDashboard size={20} /> },
         { name: 'Appointments', path: '/receptionist/appointments', icon: <Calendar size={20} /> },
+        { name: 'Ward Management', path: '/receptionist/wards', icon: <BedDouble size={20} /> },
+        { name: 'ICU Availability', path: '/receptionist/icu', icon: <Activity size={20} /> },
+        { name: 'OT Scheduling', path: '/receptionist/ot-schedule', icon: <Clock size={20} /> },
         { name: 'Billing', path: '/receptionist/billing', icon: <CreditCard size={20} /> },
     ];
 

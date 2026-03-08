@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-    Activity,
     LogOut,
     LayoutDashboard,
     Menu,
@@ -61,7 +60,6 @@ const NurseLayout = () => {
 
     const navItems = [
         { name: 'Dashboard', path: '/nurse/dashboard', icon: <LayoutDashboard size={20} /> },
-        { name: 'Wards & Vitals', path: '/nurse/wards', icon: <Activity size={20} /> },
     ];
 
     return (

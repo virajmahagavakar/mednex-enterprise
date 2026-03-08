@@ -1,4 +1,4 @@
-
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -16,12 +16,26 @@ import PharmacistLayout from './components/pharmacist/PharmacistLayout';
 import DoctorLayout from './components/doctor/DoctorLayout';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import Patients from './pages/doctor/Patients';
+import PatientEMR from './pages/doctor/PatientEMR';
+import IPDDashboard from './pages/doctor/IPDDashboard';
+import DoctorSchedule from './pages/doctor/DoctorSchedule';
 
 import ReceptionistLayout from './components/receptionist/ReceptionistLayout';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard';
+import WardManagement from './pages/receptionist/WardManagement';
+import BillingDashboard from './pages/receptionist/BillingDashboard';
+import ICUAvailability from './pages/receptionist/ICUAvailability';
 
 import NurseLayout from './components/nurse/NurseLayout';
 import NurseDashboard from './pages/nurse/NurseDashboard';
+
+import LabLayout from './components/lab/LabLayout';
+import { LabDashboard } from './pages/diagnostics/LabDashboard';
+
+import RadiologyLayout from './components/radiology/RadiologyLayout';
+import { RadiologyDashboard } from './pages/diagnostics/RadiologyDashboard';
+
+import { OTDashboard } from './pages/surgery/OTDashboard';
 
 import PatientRegistration from './pages/auth/PatientRegistration';
 import PatientLayout from './components/patient/PatientLayout';
@@ -56,27 +70,42 @@ function App() {
           <Route path="dispense" element={<DispensingStation />} />
         </Route>
 
-        {/* Doctor Routes */}
         <Route path="/doctor" element={<DoctorLayout />}>
           <Route index element={<Navigate to="/doctor/dashboard" replace />} />
           <Route path="dashboard" element={<DoctorDashboard />} />
           <Route path="patients" element={<Patients />} />
+          <Route path="patient/:id/emr" element={<PatientEMR />} />
+          <Route path="ipd" element={<IPDDashboard />} />
+          <Route path="schedule" element={<DoctorSchedule />} />
+          <Route path="ot-schedule" element={<OTDashboard />} />
           <Route path="appointments" element={<div style={{ padding: '2rem' }}><h2>Appointments Coming Soon</h2></div>} />
         </Route>
 
-        {/* Receptionist Routes */}
         <Route path="/receptionist" element={<ReceptionistLayout />}>
           <Route index element={<Navigate to="/receptionist/dashboard" replace />} />
           <Route path="dashboard" element={<ReceptionistDashboard />} />
           <Route path="appointments" element={<div style={{ padding: '2rem' }}><h2>Appointments Coming Soon</h2></div>} />
-          <Route path="billing" element={<div style={{ padding: '2rem' }}><h2>Billing Coming Soon</h2></div>} />
+          <Route path="billing" element={<BillingDashboard />} />
+          <Route path="wards" element={<WardManagement />} />
+          <Route path="icu" element={<ICUAvailability />} />
+          <Route path="ot-schedule" element={<OTDashboard />} />
+          <Route path="ot" element={<Navigate to="/receptionist/ot-schedule" replace />} />
         </Route>
 
-        {/* Nurse Routes */}
         <Route path="/nurse" element={<NurseLayout />}>
           <Route index element={<Navigate to="/nurse/dashboard" replace />} />
           <Route path="dashboard" element={<NurseDashboard />} />
-          <Route path="wards" element={<div style={{ padding: '2rem' }}><h2>Wards & Vitals Coming Soon</h2></div>} />
+          <Route path="vitals" element={<div style={{ padding: '2rem' }}><h2>Vitals Coming Soon</h2></div>} />
+        </Route>
+
+        <Route path="/lab" element={<LabLayout />}>
+          <Route index element={<Navigate to="/lab/dashboard" replace />} />
+          <Route path="dashboard" element={<LabDashboard />} />
+        </Route>
+
+        <Route path="/radiology" element={<RadiologyLayout />}>
+          <Route index element={<Navigate to="/radiology/dashboard" replace />} />
+          <Route path="dashboard" element={<RadiologyDashboard />} />
         </Route>
 
         <Route path="/register/patient" element={<PatientRegistration />} />

@@ -1,33 +1,20 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DoctorService } from '../../services/doctor.service';
+import { TokenService } from '../../services/api.client';
 import type { DoctorDashboardStatsDTO, AppointmentResponse } from '../../services/api.types';
-import { Users, Calendar, Clock, Activity, Search, X, Plus } from 'lucide-react';
+import { Users, Calendar, Clock, Activity, Search } from 'lucide-react';
 
 const DoctorDashboard = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<DoctorDashboardStatsDTO | null>(null);
     const [todayAppointments, setTodayAppointments] = useState<AppointmentResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    // Prescription Modal State
-    const [activeAppointment, setActiveAppointment] = useState<AppointmentResponse | null>(null);
-    const [medicines, setMedicines] = useState<any[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [prescriptionItems, setPrescriptionItems] = useState<{ medicineId: string, name: string, qty: number, instructions: string }[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const doctorName = TokenService.getUserName() || 'Doctor';
 
     useEffect(() => {
         fetchDashboardData();
-        fetchMedicines();
     }, []);
-
-    const fetchMedicines = async () => {
-        try {
-            const data = await DoctorService.getMedicines();
-            setMedicines(data);
-        } catch (error) {
-            console.error("Failed to load medicines catalog", error);
-        }
-    };
 
     const fetchDashboardData = async () => {
         setIsLoading(true);
@@ -54,6 +41,7 @@ const DoctorDashboard = () => {
     const getStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'SCHEDULED': return 'status-upcoming';
+            case 'CHECKED_IN': return 'status-active';
             case 'IN_PROGRESS': return 'status-active';
             case 'COMPLETED': return 'status-completed';
             case 'CANCELLED': return 'status-cancelled';
@@ -62,60 +50,19 @@ const DoctorDashboard = () => {
     };
 
     const handleStartVisit = (appointment: AppointmentResponse) => {
-        setActiveAppointment(appointment);
+        navigate(`/doctor/patient/${appointment.patientId}/emr?appointmentId=${appointment.id}`);
     };
-
-    const handleAddMedicine = (med: any) => {
-        if (!prescriptionItems.find(item => item.medicineId === med.id)) {
-            setPrescriptionItems([...prescriptionItems, { medicineId: med.id, name: med.name, qty: 1, instructions: '1x a day' }]);
-        }
-        setSearchTerm('');
-    };
-
-    const handleRemoveMedicine = (id: string) => {
-        setPrescriptionItems(prescriptionItems.filter(item => item.medicineId !== id));
-    };
-
-    const handleSubmitPrescription = async () => {
-        if (!activeAppointment || prescriptionItems.length === 0) return;
-        setIsSubmitting(true);
-        try {
-            await DoctorService.createPrescription({
-                patientId: activeAppointment.patientId,
-                appointmentId: activeAppointment.id,
-                items: prescriptionItems.map(item => ({
-                    medicineId: item.medicineId,
-                    prescribedQuantity: item.qty,
-                    dosageInstructions: item.instructions
-                }))
-            });
-            // Update appointment status to COMPLETED
-            await DoctorService.updateAppointment(activeAppointment.id, { status: 'COMPLETED' });
-
-            // Cleanup and refresh
-            setActiveAppointment(null);
-            setPrescriptionItems([]);
-            fetchDashboardData();
-        } catch (error) {
-            console.error("Failed to submit prescription", error);
-            alert("Failed to create prescription.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const filteredMedicines = medicines.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
         <div className="page-container">
             <div className="page-header">
                 <div>
-                    <h2 className="page-title">Welcome, Doctor</h2>
+                    <h2 className="page-title">Welcome, Dr. {doctorName}</h2>
                     <p className="page-description">Here's an overview of your day</p>
                 </div>
-                <button className="btn-primary" style={{ width: 'auto', padding: '0.625rem 1.25rem' }}>
+                <button className="btn-primary" style={{ width: 'auto', padding: '0.625rem 1.25rem' }} onClick={() => navigate('/doctor/schedule')}>
                     <Calendar size={18} />
-                    View Full Schedule
+                    Manage Schedule
                 </button>
             </div>
 
@@ -135,7 +82,7 @@ const DoctorDashboard = () => {
                         <Calendar size={24} />
                     </div>
                     <div className="stat-content">
-                        <p className="stat-label">Today's Appointments</p>
+                        <p className="stat-label">Today's Total</p>
                         <h4 className="stat-value">{stats?.todayAppointments || 0}</h4>
                     </div>
                 </div>
@@ -144,17 +91,17 @@ const DoctorDashboard = () => {
                         <Clock size={24} />
                     </div>
                     <div className="stat-content">
-                        <p className="stat-label">Upcoming</p>
-                        <h4 className="stat-value">{stats?.upcomingAppointments || 0}</h4>
+                        <p className="stat-label">Waiting Queue</p>
+                        <h4 className="stat-value">{stats?.waitingQueueCount || 0}</h4>
                     </div>
                 </div>
                 <div className="card stat-card">
-                    <div className="stat-icon" style={{ backgroundColor: '#FEE2E2', color: '#DC2626' }}>
+                    <div className="stat-icon" style={{ backgroundColor: '#E0F2FE', color: '#0284C7' }}>
                         <Activity size={24} />
                     </div>
                     <div className="stat-content">
-                        <p className="stat-label">Pending Prescriptions</p>
-                        <h4 className="stat-value">{stats?.pendingPrescriptions || 0}</h4>
+                        <p className="stat-label">Completed Today</p>
+                        <h4 className="stat-value">{stats?.completedToday || 0}</h4>
                     </div>
                 </div>
             </div>
@@ -210,96 +157,7 @@ const DoctorDashboard = () => {
                 </div>
             </div>
 
-            {/* Prescription Modal */}
-            {activeAppointment && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '800px', width: '90%' }}>
-                        <div className="modal-header">
-                            <h2>Clinical Visit: {activeAppointment.patientName}</h2>
-                            <button className="close-btn" onClick={() => { setActiveAppointment(null); setPrescriptionItems([]); }}><X size={20} /></button>
-                        </div>
-                        <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
 
-                            {/* Left Pane: Medicine Search */}
-                            <div>
-                                <h3>Prescribe Medication</h3>
-                                <div className="search-bar" style={{ marginTop: '1rem' }}>
-                                    <Search size={18} className="search-icon" />
-                                    <input
-                                        type="text"
-                                        className="search-input"
-                                        placeholder="Search Pharmacy Catalog..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                                {searchTerm && (
-                                    <div className="search-results">
-                                        {filteredMedicines.slice(0, 5).map(med => (
-                                            <div key={med.id} className="search-result-item" onClick={() => handleAddMedicine(med)}>
-                                                <div>
-                                                    <strong>{med.name}</strong> <span style={{ fontSize: '0.8rem', color: 'gray' }}>{med.unit}</span>
-                                                    <div style={{ fontSize: '0.8rem' }}>{med.category} • {med.currentStock} in stock</div>
-                                                </div>
-                                                <button className="btn-icon"><Plus size={16} /></button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Right Pane: Selected Items */}
-                            <div>
-                                <h3>Current Prescription</h3>
-                                {prescriptionItems.length === 0 ? (
-                                    <div className="empty-state" style={{ padding: '2rem' }}>
-                                        <p>No medicines selected</p>
-                                    </div>
-                                ) : (
-                                    <div className="prescription-list">
-                                        {prescriptionItems.map((item, index) => (
-                                            <div key={item.medicineId} className="prescription-item">
-                                                <div className="item-header">
-                                                    <strong>{item.name}</strong>
-                                                    <button className="text-danger" onClick={() => handleRemoveMedicine(item.medicineId)}><X size={16} /></button>
-                                                </div>
-                                                <div className="item-controls" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                                    <div className="form-group" style={{ flex: '1' }}>
-                                                        <label>Qty</label>
-                                                        <input type="number" min="1" className="form-control" value={item.qty} onChange={(e) => {
-                                                            const newItems = [...prescriptionItems];
-                                                            newItems[index].qty = parseInt(e.target.value) || 1;
-                                                            setPrescriptionItems(newItems);
-                                                        }} />
-                                                    </div>
-                                                    <div className="form-group" style={{ flex: '2' }}>
-                                                        <label>Instructions</label>
-                                                        <input type="text" className="form-control" value={item.instructions} onChange={(e) => {
-                                                            const newItems = [...prescriptionItems];
-                                                            newItems[index].instructions = e.target.value;
-                                                            setPrescriptionItems(newItems);
-                                                        }} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => { setActiveAppointment(null); setPrescriptionItems([]); }}>Cancel</button>
-                            <button
-                                className="btn-primary"
-                                disabled={prescriptionItems.length === 0 || isSubmitting}
-                                onClick={handleSubmitPrescription}
-                            >
-                                {isSubmitting ? 'Submitting...' : 'Send to Pharmacy & Complete Visit'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <style>
                 {`

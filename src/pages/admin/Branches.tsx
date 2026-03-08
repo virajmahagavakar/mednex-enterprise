@@ -38,7 +38,8 @@ const Branches = () => {
       try {
         const decoded = jwtDecode<JWTPayload>(token);
         if (decoded.roles && decoded.roles.length > 0) {
-          setUserRole(decoded.roles[0]?.replace('ROLE_', ''));
+          const role = decoded.roles[0]?.replace('ROLE_', '');
+          setUserRole(role);
         }
       } catch (e) {
         console.error("Failed to decode token", e);
@@ -189,7 +190,7 @@ const Branches = () => {
               </div>
 
               <div className="branch-card-footer">
-                {userRole === 'HOSPITAL_ADMIN' ? (
+                {(userRole === 'HOSPITAL_ADMIN' || userRole === 'ADMIN') ? (
                   !branch.branchAdminId ? (
                     <button className="btn-primary" style={{ flex: 1, padding: '0.4rem' }} onClick={() => { setSelectedBranch(branch); setIsAssignAdminModalOpen(true); }}>Assign Admin</button>
                   ) : (
@@ -286,7 +287,7 @@ const Branches = () => {
                         <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>{selectedBranch.branchAdminName}</p>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{selectedBranch.branchAdminEmail}</p>
                       </div>
-                      {userRole === 'HOSPITAL_ADMIN' && (
+                      {(userRole === 'HOSPITAL_ADMIN' || userRole === 'ADMIN') && (
                         <button
                           type="button"
                           className="btn-outline"

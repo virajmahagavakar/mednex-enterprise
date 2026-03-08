@@ -1,73 +1,101 @@
-# React + TypeScript + Vite
+# Mednex Enterprise — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A modern, multi-portal Hospital Management System (HMS) built with **React + Vite + TypeScript**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🏥 Overview
 
-## React Compiler
+Mednex Enterprise is a comprehensive HMS platform with dedicated portals for every hospital role:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Portal | Role | Key Features |
+|--------|------|--------------|
+| **Admin Console** | Hospital Admin | Branch & staff management, subscriptions |
+| **Doctor Portal** | Doctor | OPD dashboard, Patient EMR, IPD management, OT scheduling |
+| **Nurse Portal** | Nurse | Patient triage, vitals, waiting-room queue |
+| **Receptionist Portal** | Receptionist | Ward management, billing, OT scheduling |
+| **Lab Portal** | Lab Technician | Pathology worklist, result entry |
+| **Radiology Portal** | Radiologist | Radiology worklist, image result entry |
+| **Pharmacy Portal** | Pharmacist | Inventory, dispensing station, supplier management |
+| **Patient Portal** | Patient | Profile, appointment booking, medical records |
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
+- Node.js 18+
+- npm 9+
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# Clone the repository
+git clone https://github.com/virajmahagavakar/mednex-enterprise.git
+cd mednex-enterprise
+
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The app will be available at **http://localhost:5173**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🛠️ Tech Stack
+
+- **React 18** — UI library
+- **Vite 7** — Build tool & dev server
+- **TypeScript** — Type safety
+- **React Router v7** — Client-side routing
+- **Axios** — HTTP client
+- **Lucide React** — Icon library
+
+---
+
+## 📁 Project Structure
+
 ```
+src/
+├── components/          # Role-specific layout components
+│   ├── admin/
+│   ├── doctor/
+│   ├── nurse/
+│   ├── receptionist/
+│   ├── lab/
+│   ├── radiology/
+│   ├── pharmacist/
+│   └── patient/
+├── pages/               # Page components per portal
+│   ├── admin/
+│   ├── doctor/
+│   ├── nurse/
+│   ├── receptionist/
+│   ├── diagnostics/     # Lab + Radiology dashboards
+│   ├── surgery/         # OT Dashboard
+│   ├── pharmacy/
+│   ├── patient/
+│   └── auth/
+├── services/            # API service layer
+│   ├── api.client.ts    # Axios instance with auth interceptor
+│   ├── api.types.ts     # All TypeScript DTOs
+│   └── *.service.ts     # Per-module service files
+└── styles/              # Theme CSS files
+```
+
+---
+
+## ⚙️ Backend
+
+This frontend connects to the **Mednex Enterprise Spring Boot backend** running on `http://localhost:8080`.
+
+All API calls go through `src/services/api.client.ts` which automatically attaches the JWT token from `localStorage`.
+
+---
+
+## 📝 License
+
+MIT

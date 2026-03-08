@@ -29,7 +29,7 @@ const Staff = () => {
       try {
         const decoded: any = jwtDecode(token);
         const roles = typeof decoded.role === 'string' ? [decoded.role] : (decoded.role || []);
-        if (roles.includes('HOSPITAL_ADMIN')) setUserRole('HOSPITAL_ADMIN');
+        if (roles.includes('HOSPITAL_ADMIN') || roles.includes('ADMIN')) setUserRole('HOSPITAL_ADMIN'); // ADMIN treated as HOSPITAL_ADMIN for UI
         else if (roles.includes('BRANCH_ADMIN')) setUserRole('BRANCH_ADMIN');
 
         if (decoded.branchId) {
