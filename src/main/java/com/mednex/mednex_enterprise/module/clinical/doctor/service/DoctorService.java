@@ -1,23 +1,18 @@
 package com.mednex.mednex_enterprise.module.clinical.doctor.service;
 
-import com.mednex.mednex_enterprise.core.entity.User;
-import com.mednex.mednex_enterprise.core.repository.UserRepository;
-import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointment;
-import com.mednex.mednex_enterprise.module.clinical.appointment.entity.AppointmentStatus;
-import com.mednex.mednex_enterprise.module.clinical.appointment.repository.AppointmentRepository;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentResponse;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentUpdateRequest;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DoctorDashboardStatsDTO;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.PatientResponse;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.ClinicalNoteResponse;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.CreateClinicalNoteRequest;
-import com.mednex.mednex_enterprise.module.clinical.doctor.entity.ClinicalNote;
-import com.mednex.mednex_enterprise.module.clinical.doctor.repository.ClinicalNoteRepository;
-import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
-import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DashboardChartDataDTO;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.*;
+import com.mednex.mednex_enterprise.module.clinical.doctor.entity.*;
+import com.mednex.mednex_enterprise.module.clinical.doctor.repository.*;
+import com.mednex.mednex_enterprise.module.clinical.ipd.entity.Admission;
 import com.mednex.mednex_enterprise.module.clinical.ipd.entity.AdmissionStatus;
 import com.mednex.mednex_enterprise.module.clinical.ipd.repository.AdmissionRepository;
+import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
+import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
+import com.mednex.mednex_enterprise.core.repository.UserRepository;
+import com.mednex.mednex_enterprise.module.clinical.appointment.repository.AppointmentRepository;
+import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointment;
+import com.mednex.mednex_enterprise.module.clinical.appointment.entity.AppointmentStatus;
+import com.mednex.mednex_enterprise.core.entity.User;
 import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -43,6 +38,9 @@ public class DoctorService {
     private final UserRepository userRepository;
     private final ClinicalNoteRepository clinicalNoteRepository;
     private final AdmissionRepository admissionRepository;
+    private final PrescriptionRepository prescriptionRepository;
+    private final VitalsRepository vitalsRepository;
+    private final LabTestRequestRepository labTestRequestRepository;
 
     @Transactional(readOnly = true)
     public DoctorDashboardStatsDTO getDashboardStats(UUID doctorId) {
@@ -167,20 +165,44 @@ public class DoctorService {
     }
 
     @Transactional(readOnly = true)
-    public List<PatientResponse> getPatientsForDoctor(UUID doctorId) {
-        log.info("Fetching patients for doctor {}", doctorId);
-        User doctor = userRepository.findById(doctorId)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+    public List<PatientSummaryDTO> getPatientsForDoctor(UUID doctorId) {
+        log.info("Fetching production-grade summary list for doctor {}", doctorId);
         
-        if (doctor.getPrimaryBranch() == null) {
-            log.warn("Doctor {} has no primary branch assigned", doctorId);
-            return List.of();
+        List<Patient> assignedPatients = patientRepository.findAssignedPatients(doctorId);
+        
+        return assignedPatients.stream()
+                .map(p -> mapToPatientSummaryDTO(p, doctorId))
+                .collect(Collectors.toList());
+    }
+
+    private PatientSummaryDTO mapToPatientSummaryDTO(Patient p, UUID doctorId) {
+        // Find if they are currently an IPD patient under this doctor
+        boolean isIpd = admissionRepository.findTopByPatientIdAndStatusOrderByAdmissionDateDesc(
+                p.getId(), AdmissionStatus.ADMITTED)
+                .map(a -> a.getAdmittingDoctor().getId().equals(doctorId))
+                .orElse(false);
+
+        // Calculate age
+        Integer age = null;
+        if (p.getDateOfBirth() != null) {
+            try {
+                LocalDate dob = LocalDate.parse(p.getDateOfBirth());
+                age = java.time.Period.between(dob, LocalDate.now()).getYears();
+            } catch (Exception e) {
+                log.warn("Could not parse DOB for patient {}: {}", p.getId(), p.getDateOfBirth());
+            }
         }
 
-        return patientRepository.findByRegisteredBranchId(doctor.getPrimaryBranch().getId())
-                .stream()
-                .map(this::mapToPatientResponse)
-                .collect(Collectors.toList());
+        return PatientSummaryDTO.builder()
+                .id(p.getId())
+                .name(p.getFirstName() + " " + p.getLastName())
+                .age(age)
+                .gender(p.getGender())
+                .contactNumber(p.getPhone())
+                .patientType(isIpd ? "IPD" : "OPD")
+                .lastVisitDate(p.getUpdatedAt() != null ? p.getUpdatedAt().toLocalDate().toString() : "Never")
+                .currentStatus(isIpd ? "ADMITTED" : "FOLLOW_UP") // Default for now
+                .build();
     }
 
     private PatientResponse mapToPatientResponse(Patient p) {
@@ -234,11 +256,135 @@ public class DoctorService {
         return getClinicalNotesForPatient(patientId);
     }
 
+    @Transactional(readOnly = true)
+    public PatientEMRResponse getPatientFullEMR(UUID doctorId, UUID patientId) {
+        log.info("Fetching production-grade full EMR for patient {} by doctor {}", patientId, doctorId);
+        
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        
+        List<ClinicalNote> notes = clinicalNoteRepository.findByPatientIdOrderByCreatedAtDesc(patientId);
+        List<Prescription> prescriptions = prescriptionRepository.findByPatientIdOrderByCreatedAtDesc(patientId);
+        List<Vitals> vitals = vitalsRepository.findByPatientIdOrderByRecordedAtDesc(patientId);
+        List<LabTestRequest> labRequests = labTestRequestRepository.findByPatientIdOrderByRequestedAtDesc(patientId);
+        List<Admission> admissions = admissionRepository.findByPatientIdOrderByAdmissionDateDesc(patientId);
+
+        return PatientEMRResponse.builder()
+                .patientDetails(mapToPatientResponse(patient))
+                .clinicalNotes(notes.stream().map(this::mapToClinicalNoteResponse).collect(Collectors.toList()))
+                .prescriptions(prescriptions.stream().map(this::mapToPrescriptionResponse).collect(Collectors.toList()))
+                .vitalsHistory(vitals.stream().map(this::mapToVitalsResponse).collect(Collectors.toList()))
+                .labReports(labRequests.stream().map(this::mapToLabTestRequestResponse).collect(Collectors.toList()))
+                .admissionHistory(admissions.stream().map(this::mapToAdmissionSummaryDTO).collect(Collectors.toList()))
+                .build();
+    }
+
+    @Transactional
+    public PrescriptionResponse createPrescription(UUID doctorId, UUID patientId, CreatePrescriptionRequest request) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+
+        Prescription prescription = Prescription.builder()
+                .patient(patient)
+                .doctor(doctor)
+                .medicineName(request.getMedicineName())
+                .dosage(request.getDosage())
+                .frequency(request.getFrequency())
+                .duration(request.getDuration())
+                .build();
+
+        return mapToPrescriptionResponse(prescriptionRepository.save(prescription));
+    }
+
+    @Transactional
+    public VitalsResponse recordVitals(UUID patientId, VitalsRequest request) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        Vitals vitals = Vitals.builder()
+                .patient(patient)
+                .bloodPressure(request.getBloodPressure())
+                .temperature(request.getTemperature())
+                .heartRate(request.getHeartRate())
+                .oxygenSaturation(request.getOxygenSaturation())
+                .height(request.getHeight())
+                .weight(request.getWeight())
+                .build();
+
+        return mapToVitalsResponse(vitalsRepository.save(vitals));
+    }
+
+    @Transactional
+    public LabTestRequestResponse requestLabTest(UUID doctorId, UUID patientId, CreateLabTestRequest request) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+
+        LabTestRequest labRequest = LabTestRequest.builder()
+                .patient(patient)
+                .doctor(doctor)
+                .testType(request.getTestType())
+                .priority(request.getPriority())
+                .notes(request.getNotes())
+                .build();
+
+        return mapToLabTestRequestResponse(labTestRequestRepository.save(labRequest));
+    }
+
+    private PrescriptionResponse mapToPrescriptionResponse(Prescription p) {
+        return PrescriptionResponse.builder()
+                .id(p.getId())
+                .medicineName(p.getMedicineName())
+                .dosage(p.getDosage())
+                .frequency(p.getFrequency())
+                .duration(p.getDuration())
+                .createdAt(p.getCreatedAt())
+                .build();
+    }
+
+    private VitalsResponse mapToVitalsResponse(Vitals v) {
+        return VitalsResponse.builder()
+                .id(v.getId())
+                .bloodPressure(v.getBloodPressure())
+                .temperature(v.getTemperature())
+                .heartRate(v.getHeartRate())
+                .oxygenSaturation(v.getOxygenSaturation())
+                .height(v.getHeight())
+                .weight(v.getWeight())
+                .recordedAt(v.getRecordedAt())
+                .build();
+    }
+
+    private LabTestRequestResponse mapToLabTestRequestResponse(LabTestRequest l) {
+        return LabTestRequestResponse.builder()
+                .id(l.getId())
+                .testType(l.getTestType())
+                .priority(l.getPriority())
+                .notes(l.getNotes())
+                .status(l.getStatus())
+                .requestedAt(l.getRequestedAt())
+                .build();
+    }
+
+    private AdmissionSummaryDTO mapToAdmissionSummaryDTO(Admission a) {
+        return AdmissionSummaryDTO.builder()
+                .id(a.getId())
+                .admissionDate(a.getAdmissionDate())
+                .dischargeDate(a.getDischargeDate())
+                .status(a.getStatus().name())
+                .wardName(a.getCurrentBed() != null ? a.getCurrentBed().getWard().getName() : "N/A")
+                .bedNumber(a.getCurrentBed() != null ? a.getCurrentBed().getBedNumber() : "N/A")
+                .build();
+    }
+
     private ClinicalNoteResponse mapToClinicalNoteResponse(ClinicalNote note) {
         return ClinicalNoteResponse.builder()
                 .id(note.getId())
                 .patientId(note.getPatient().getId())
-                .appointmentId(note.getAppointment().getId())
+                .appointmentId(note.getAppointment() != null ? note.getAppointment().getId() : null)
                 .doctorId(note.getDoctor().getId())
                 .doctorName(note.getDoctor().getName())
                 .subjective(note.getSubjective())

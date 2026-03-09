@@ -12,16 +12,14 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DailyRoundDTO {
+public class MedicationAdministrationDTO {
     private UUID id;
     private UUID admissionId;
-    private UUID doctorId;
-    private String doctorName;
-    private LocalDateTime roundDate;
-    private String clinicalNotes;
-    private String temperature;
-    private String bloodPressure;
-    private String heartRate;
-    private String medicationAdjustment;
-    private String nextStep;
+    private String medicineName;
+    private String dosage;
+    private String route;
+    private UUID administeredById;
+    private String administeredByName;
+    private LocalDateTime administeredAt;
+    private String notes;
 }

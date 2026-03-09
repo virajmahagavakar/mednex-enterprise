@@ -13,4 +13,9 @@ import lombok.NoArgsConstructor;
 public class DailyRoundRequest {
     @NotBlank(message = "Clinical notes are required")
     private String clinicalNotes;
+    private String temperature;
+    private String bloodPressure;
+    private String heartRate;
+    private String medicationAdjustment;
+    private String nextStep;
 }

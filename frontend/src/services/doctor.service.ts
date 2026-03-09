@@ -15,7 +15,16 @@ import type {
     AdmissionRequest,
     DailyRoundDTO,
     DailyRoundRequest,
-    DoctorScheduleDTO
+    DoctorScheduleDTO,
+    PatientSummaryDTO,
+    PatientEMRResponse,
+    PrescriptionResponse,
+    VitalsResponse,
+    LabTestRequestResponse,
+    AdmissionSummaryDTO,
+    VitalsRequest,
+    CreateLabTestRequest,
+    ClinicalPrescriptionRequest
 } from './api.types';
 
 const DOCTOR_API_PREFIX = '/v1/clinical/doctors';
@@ -61,6 +70,37 @@ export const DoctorService = {
 
     createClinicalNote: async (appointmentId: string, request: CreateClinicalNoteRequest): Promise<ClinicalNoteDTO> => {
         const { data } = await apiClient.post<ClinicalNoteDTO>(`${DOCTOR_API_PREFIX}/appointments/${appointmentId}/notes`, request);
+        return data;
+    },
+
+    // New Production EMR Endpoints
+    getPatientsForDoctor: async (): Promise<PatientSummaryDTO[]> => {
+        const { data } = await apiClient.get<PatientSummaryDTO[]>(`${DOCTOR_API_PREFIX}/patients`);
+        return data;
+    },
+
+    getPatientFullEMR: async (patientId: string): Promise<PatientEMRResponse> => {
+        const { data } = await apiClient.get<PatientEMRResponse>(`${DOCTOR_API_PREFIX}/patients/${patientId}`);
+        return data;
+    },
+
+    createPatientNote: async (patientId: string, request: CreateClinicalNoteRequest): Promise<ClinicalNoteDTO> => {
+        const { data } = await apiClient.post<ClinicalNoteDTO>(`${DOCTOR_API_PREFIX}/patients/${patientId}/notes`, request);
+        return data;
+    },
+
+    createClinicalPrescription: async (patientId: string, request: ClinicalPrescriptionRequest): Promise<PrescriptionResponse> => {
+        const { data } = await apiClient.post<PrescriptionResponse>(`${DOCTOR_API_PREFIX}/patients/${patientId}/prescriptions`, request);
+        return data;
+    },
+
+    requestLabTest: async (patientId: string, request: CreateLabTestRequest): Promise<LabTestRequestResponse> => {
+        const { data } = await apiClient.post<LabTestRequestResponse>(`${DOCTOR_API_PREFIX}/patients/${patientId}/lab-tests`, request);
+        return data;
+    },
+
+    recordVitals: async (patientId: string, request: VitalsRequest): Promise<VitalsResponse> => {
+        const { data } = await apiClient.post<VitalsResponse>(`${DOCTOR_API_PREFIX}/patients/${patientId}/vitals`, request);
         return data;
     },
 

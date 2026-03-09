@@ -1,6 +1,9 @@
 package com.mednex.mednex_enterprise.module.clinical.ipd.entity;
 
 import com.mednex.mednex_enterprise.core.entity.User;
+import com.mednex.mednex_enterprise.module.clinical.appointment.entity.UrgencyLevel;
+import com.mednex.mednex_enterprise.module.clinical.ipd.entity.AdmissionStatus;
+import com.mednex.mednex_enterprise.module.clinical.ipd.entity.Bed;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,6 +48,11 @@ public class Admission {
 
     @Column(columnDefinition = "TEXT")
     private String reasonForAdmission;
+
+    @Enumerated(EnumType.STRING)
+    private UrgencyLevel urgencyLevel;
+
+    private String department;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -604,3 +604,83 @@ export interface AnesthesiaNoteRequest {
     patientVitalsSummary: string;
     anesthetistNotes: string;
 }
+// EMR Types
+export interface PatientSummaryDTO {
+    id: string; // UUID
+    name: string;
+    age: number;
+    gender: string;
+    patientType: 'OPD' | 'IPD';
+    lastVisitDate?: string; // ISO DateTime
+    currentStatus: string;
+    bloodGroup?: string;
+}
+
+export interface PatientEMRResponse {
+    patientDetails: PatientResponse;
+    clinicalNotes: ClinicalNoteDTO[];
+    prescriptions: PrescriptionResponse[];
+    vitalsHistory: VitalsResponse[];
+    labReports: LabTestRequestResponse[];
+    admissionHistory: AdmissionSummaryDTO[];
+}
+
+export interface PrescriptionResponse {
+    id: string; // UUID
+    medicineName: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+    createdAt: string; // ISO DateTime
+}
+
+export interface VitalsResponse {
+    id: string; // UUID
+    bloodPressure: string;
+    temperature: string;
+    heartRate: string;
+    oxygenSaturation: string;
+    height: string;
+    weight: string;
+    recordedAt: string; // ISO DateTime
+}
+
+export interface LabTestRequestResponse {
+    id: string; // UUID
+    testType: string;
+    priority: string;
+    notes?: string;
+    status: string;
+    requestedAt: string; // ISO DateTime
+}
+
+export interface AdmissionSummaryDTO {
+    id: string; // UUID
+    admissionDate: string;
+    dischargeDate?: string;
+    status: string;
+    wardName: string;
+    bedNumber: string;
+}
+
+export interface VitalsRequest {
+    bloodPressure: string;
+    temperature: string;
+    heartRate: string;
+    oxygenSaturation: string;
+    height: string;
+    weight: string;
+}
+
+export interface CreateLabTestRequest {
+    testType: string;
+    priority: string; // ROUTINE, URGENT, EMERGENCY
+    notes: string;
+}
+
+export interface ClinicalPrescriptionRequest {
+    medicineName: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+}

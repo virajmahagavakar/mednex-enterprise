@@ -4,19 +4,18 @@ import com.mednex.mednex_enterprise.core.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "daily_rounds")
+@Table(name = "medication_administrations")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DailyRound {
+public class MedicationAdministration {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -25,28 +24,23 @@ public class DailyRound {
     @JoinColumn(name = "admission_id", nullable = false)
     private Admission admission;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doctor_id", nullable = false)
-    private User doctor;
+    @Column(nullable = false)
+    private String medicineName;
 
     @Column(nullable = false)
-    private LocalDateTime roundDate;
+    private String dosage;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String clinicalNotes;
+    private String route; // Oral, IV, IM, etc.
 
-    private String temperature;
-    private String bloodPressure;
-    private String heartRate;
-    
-    @Column(columnDefinition = "TEXT")
-    private String medicationAdjustment;
-    
-    private String nextStep; // e.g., "Monitor", "Prepare for Discharge", "Order CT"
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "administered_by", nullable = false)
+    private User administeredBy;
+
+    @Column(nullable = false)
+    private LocalDateTime administeredAt;
+
+    private String notes;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 }

@@ -16,7 +16,7 @@ public interface AdmissionRepository extends JpaRepository<Admission, UUID> {
     @Query("SELECT a FROM Admission a JOIN FETCH a.patient p JOIN FETCH a.currentBed b JOIN FETCH b.ward w WHERE a.patient.id = :patientId ORDER BY a.admissionDate DESC")
     List<Admission> findByPatientIdOrderByAdmissionDateDesc(@Param("patientId") UUID patientId);
 
-    List<Admission> findByStatus(AdmissionStatus status);
+    List<Admission> findByStatusOrderByAdmissionDateDesc(AdmissionStatus status);
 
     @Query("SELECT a FROM Admission a JOIN FETCH a.patient p JOIN FETCH a.currentBed b JOIN FETCH b.ward w WHERE a.admittingDoctor.id = :doctorId AND a.status = :status")
     List<Admission> findByAdmittingDoctorIdAndStatus(@Param("doctorId") UUID doctorId, @Param("status") AdmissionStatus status);
@@ -25,4 +25,10 @@ public interface AdmissionRepository extends JpaRepository<Admission, UUID> {
 
     @Query("SELECT COUNT(a) FROM Admission a WHERE a.admittingDoctor.id = :doctorId AND a.status = :status")
     long countByAdmittingDoctorIdAndStatus(@Param("doctorId") UUID doctorId, @Param("status") AdmissionStatus status);
+
+    @Query("SELECT a FROM Admission a JOIN FETCH a.patient p JOIN FETCH a.currentBed b JOIN FETCH b.ward w WHERE w.branch.id = :branchId AND a.status IN :statuses")
+    List<Admission> findByBranchIdAndStatuses(@Param("branchId") UUID branchId, @Param("statuses") List<AdmissionStatus> statuses);
+
+    @Query("SELECT a FROM Admission a JOIN FETCH a.patient p JOIN FETCH a.currentBed b JOIN FETCH b.ward w WHERE w.id = :wardId AND a.status IN :statuses")
+    List<Admission> findByWardIdAndStatuses(@Param("wardId") UUID wardId, @Param("statuses") List<AdmissionStatus> statuses);
 }

@@ -1,13 +1,7 @@
 package com.mednex.mednex_enterprise.module.clinical.doctor.controller;
 
 import com.mednex.mednex_enterprise.core.entity.User;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentResponse;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentUpdateRequest;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.ClinicalNoteResponse;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.CreateClinicalNoteRequest;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DoctorDashboardStatsDTO;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DashboardChartDataDTO;
-import com.mednex.mednex_enterprise.module.clinical.doctor.dto.PatientResponse;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.*;
 import com.mednex.mednex_enterprise.module.clinical.doctor.service.DoctorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -75,26 +69,8 @@ public class DoctorController {
     }
 
     @GetMapping("/patients")
-    public ResponseEntity<List<PatientResponse>> getPatients(@AuthenticationPrincipal User doctor) {
-<<<<<<< HEAD
-        List<PatientResponse> patients = doctorService.getPatientsForDoctor(doctor.getId())
-                .stream()
-                .map(p -> PatientResponse.builder()
-                        .id(p.getId())
-                        .firstName(p.getFirstName())
-                        .lastName(p.getLastName())
-                        .email(p.getEmail())
-                        .phone(p.getPhone())
-                        .dateOfBirth(p.getDateOfBirth() != null ? LocalDate.parse(p.getDateOfBirth()) : null)
-                        .gender(p.getGender())
-                        .bloodGroup(p.getBloodGroup())
-                        .medicalHistory(p.getMedicalHistory())
-                        .build())
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(patients);
-=======
+    public ResponseEntity<List<PatientSummaryDTO>> getPatients(@AuthenticationPrincipal User doctor) {
         return ResponseEntity.ok(doctorService.getPatientsForDoctor(doctor.getId()));
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
     }
 
     @PostMapping("/appointments/{id}/notes")
@@ -105,10 +81,43 @@ public class DoctorController {
         return ResponseEntity.ok(doctorService.createClinicalNote(doctor.getId(), id, request));
     }
 
-    @GetMapping("/patients/{patientId}/emr")
-    public ResponseEntity<List<ClinicalNoteResponse>> getPatientEMR(
+    @GetMapping("/patients/{patientId}")
+    public ResponseEntity<PatientEMRResponse> getPatientFullEMR(
             @AuthenticationPrincipal User doctor,
             @PathVariable UUID patientId) {
-        return ResponseEntity.ok(doctorService.getClinicalNotesForPatientAsDoctor(doctor.getId(), patientId));
+        return ResponseEntity.ok(doctorService.getPatientFullEMR(doctor.getId(), patientId));
+    }
+
+    @PostMapping("/patients/{patientId}/notes")
+    public ResponseEntity<ClinicalNoteResponse> createPatientNote(
+            @AuthenticationPrincipal User doctor,
+            @PathVariable UUID patientId,
+            @RequestBody CreateClinicalNoteRequest request) {
+        // Find if there is an active appointment to link
+        // For simplicity in a multi-modal EMR, we allow notes without mandatory appointment link in new endpoints
+        return ResponseEntity.ok(doctorService.createClinicalNote(doctor.getId(), null, request));
+    }
+
+    @PostMapping("/patients/{patientId}/prescriptions")
+    public ResponseEntity<PrescriptionResponse> createPrescription(
+            @AuthenticationPrincipal User doctor,
+            @PathVariable UUID patientId,
+            @RequestBody CreatePrescriptionRequest request) {
+        return ResponseEntity.ok(doctorService.createPrescription(doctor.getId(), patientId, request));
+    }
+
+    @PostMapping("/patients/{patientId}/lab-tests")
+    public ResponseEntity<LabTestRequestResponse> requestLabTest(
+            @AuthenticationPrincipal User doctor,
+            @PathVariable UUID patientId,
+            @RequestBody CreateLabTestRequest request) {
+        return ResponseEntity.ok(doctorService.requestLabTest(doctor.getId(), patientId, request));
+    }
+
+    @PostMapping("/patients/{patientId}/vitals")
+    public ResponseEntity<VitalsResponse> recordVitals(
+            @PathVariable UUID patientId,
+            @RequestBody VitalsRequest request) {
+        return ResponseEntity.ok(doctorService.recordVitals(patientId, request));
     }
 }
