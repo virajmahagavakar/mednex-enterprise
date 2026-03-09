@@ -6,6 +6,7 @@ import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentUpdate
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.ClinicalNoteResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.CreateClinicalNoteRequest;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DoctorDashboardStatsDTO;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DashboardChartDataDTO;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.PatientResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.service.DoctorService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,21 @@ public class DoctorController {
     @GetMapping("/dashboard")
     public ResponseEntity<DoctorDashboardStatsDTO> getDashboardStats(@AuthenticationPrincipal User doctor) {
         return ResponseEntity.ok(doctorService.getDashboardStats(doctor.getId()));
+    }
+
+    @GetMapping("/dashboard/detailed")
+    public ResponseEntity<List<DashboardChartDataDTO>> getDetailedStats(@AuthenticationPrincipal User doctor) {
+        return ResponseEntity.ok(doctorService.getDetailedStats(doctor.getId()));
+    }
+
+    @GetMapping("/queue")
+    public ResponseEntity<List<AppointmentResponse>> getWaitingQueue(@AuthenticationPrincipal User doctor) {
+        return ResponseEntity.ok(doctorService.getWaitingQueue(doctor.getId()));
+    }
+
+    @GetMapping("/appointments/today")
+    public ResponseEntity<List<AppointmentResponse>> getTodayAppointments(@AuthenticationPrincipal User doctor) {
+        return ResponseEntity.ok(doctorService.getTodayAppointments(doctor.getId()));
     }
 
     @GetMapping("/appointments")
@@ -60,21 +76,7 @@ public class DoctorController {
 
     @GetMapping("/patients")
     public ResponseEntity<List<PatientResponse>> getPatients(@AuthenticationPrincipal User doctor) {
-        List<PatientResponse> patients = doctorService.getPatientsForDoctor(doctor.getId())
-                .stream()
-                .map(p -> PatientResponse.builder()
-                        .id(p.getId())
-                        .firstName(p.getFirstName())
-                        .lastName(p.getLastName())
-                        .email(p.getEmail())
-                        .phone(p.getPhone())
-                        .dateOfBirth(p.getDateOfBirth() != null ? LocalDate.parse(p.getDateOfBirth()) : null)
-                        .gender(p.getGender())
-                        .bloodGroup(p.getBloodGroup())
-                        .medicalHistory(p.getMedicalHistory())
-                        .build())
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(patients);
+        return ResponseEntity.ok(doctorService.getPatientsForDoctor(doctor.getId()));
     }
 
     @PostMapping("/appointments/{id}/notes")

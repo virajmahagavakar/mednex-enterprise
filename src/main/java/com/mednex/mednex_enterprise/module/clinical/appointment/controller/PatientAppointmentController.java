@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/clinical/appointments/wizard")
+@RequestMapping("/api/v1/clinical/appointments/wizard")
 @RequiredArgsConstructor
 public class PatientAppointmentController {
 

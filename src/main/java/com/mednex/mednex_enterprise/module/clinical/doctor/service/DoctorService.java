@@ -8,14 +8,20 @@ import com.mednex.mednex_enterprise.module.clinical.appointment.repository.Appoi
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.AppointmentUpdateRequest;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DoctorDashboardStatsDTO;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.PatientResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.ClinicalNoteResponse;
 import com.mednex.mednex_enterprise.module.clinical.doctor.dto.CreateClinicalNoteRequest;
 import com.mednex.mednex_enterprise.module.clinical.doctor.entity.ClinicalNote;
 import com.mednex.mednex_enterprise.module.clinical.doctor.repository.ClinicalNoteRepository;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
+import com.mednex.mednex_enterprise.module.clinical.doctor.dto.DashboardChartDataDTO;
+import com.mednex.mednex_enterprise.module.clinical.ipd.entity.AdmissionStatus;
+import com.mednex.mednex_enterprise.module.clinical.ipd.repository.AdmissionRepository;
+import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,42 +34,91 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class DoctorService {
+
+    private static final Logger log = LoggerFactory.getLogger(DoctorService.class);
 
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
     private final ClinicalNoteRepository clinicalNoteRepository;
+    private final AdmissionRepository admissionRepository;
 
+    @Transactional(readOnly = true)
     public DoctorDashboardStatsDTO getDashboardStats(UUID doctorId) {
-        // In a real application, total patients might be calculated uniquely.
-        // For now, let's estimate based on appointment distinct patients or branch
-        // patients.
-        // As a placeholder, we use 0 or fetch all branch patients if needed.
-        User doctor = userRepository.findById(doctorId)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        log.info("Fetching production-grade dashboard stats for doctor {}", doctorId);
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.with(LocalTime.MIN);
+        LocalDateTime endOfDay = now.with(LocalTime.MAX);
 
-        long totalPatients = patientRepository.findByRegisteredBranchId(doctor.getPrimaryBranch().getId()).size();
+        long totalPatients = appointmentRepository.countDistinctPatientIdByDoctorId(doctorId);
+        long todayAppointments = appointmentRepository.countByDoctorIdAndStatusAndAppointmentTimeBetween(
+                doctorId, AppointmentStatus.SCHEDULED, startOfDay, endOfDay) + 
+                appointmentRepository.countByDoctorIdAndStatusAndAppointmentTimeBetween(
+                doctorId, AppointmentStatus.CHECKED_IN, startOfDay, endOfDay) +
+                appointmentRepository.countByDoctorIdAndStatusAndAppointmentTimeBetween(
+                doctorId, AppointmentStatus.IN_PROGRESS, startOfDay, endOfDay) +
+                appointmentRepository.countByDoctorIdAndStatusAndAppointmentTimeBetween(
+                doctorId, AppointmentStatus.COMPLETED, startOfDay, endOfDay);
 
-        LocalDateTime startOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-        LocalDateTime endOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+        long waitingQueueCount = appointmentRepository.countByDoctorIdAndStatusAndAppointmentTimeBetween(
+                doctorId, AppointmentStatus.CHECKED_IN, startOfDay, endOfDay);
 
-        long todayAppointments = appointmentRepository
-                .findByDoctorIdAndAppointmentTimeBetweenOrderByAppointmentTimeAsc(doctorId, startOfDay, endOfDay)
-                .size();
+        long completedToday = appointmentRepository.countByDoctorIdAndStatusAndAppointmentTimeBetween(
+                doctorId, AppointmentStatus.COMPLETED, startOfDay, endOfDay);
 
-        long upcomingAppointments = appointmentRepository.countAppointmentsByDoctorAndStatus(doctorId,
-                AppointmentStatus.SCHEDULED);
+        long activeIpdPatients = admissionRepository.countByAdmittingDoctorIdAndStatus(
+                doctorId, AdmissionStatus.ADMITTED);
+
+        // Find next appointment time
+        List<Appointment> nextApts = appointmentRepository.findNextAppointments(
+                doctorId, AppointmentStatus.SCHEDULED, now, PageRequest.of(0, 1));
+        
+        String nextAppointmentTime = nextApts.isEmpty() ? "None" : 
+                nextApts.get(0).getAppointmentTime().toLocalTime().toString().substring(0, 5);
 
         return DoctorDashboardStatsDTO.builder()
                 .totalPatients(totalPatients)
                 .todayAppointments(todayAppointments)
-                .upcomingAppointments(upcomingAppointments)
-                .pendingPrescriptions(0) // future placeholder
+                .waitingQueueCount(waitingQueueCount)
+                .completedToday(completedToday)
+                .activeIpdPatients(activeIpdPatients)
+                .nextAppointmentTime(nextAppointmentTime)
+                .pendingPrescriptions(0)
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public List<DashboardChartDataDTO> getDetailedStats(UUID doctorId) {
+        log.info("Fetching workload trends for doctor {}", doctorId);
+        LocalDateTime end = LocalDateTime.now().with(LocalTime.MAX);
+        LocalDateTime start = end.minusDays(7).with(LocalTime.MIN);
+
+        List<Object[]> results = appointmentRepository.findDailyConsultationsCount(doctorId, start, end);
+        
+        return results.stream().map(result -> DashboardChartDataDTO.builder()
+                .date(result[0].toString())
+                .patientsSeen((Long) result[1])
+                .build()).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AppointmentResponse> getTodayAppointments(UUID doctorId) {
+        LocalDateTime start = LocalDateTime.now().with(LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.now().with(LocalTime.MAX);
+        return appointmentRepository.findByDoctorIdAndAppointmentTimeBetweenOrderByAppointmentTimeAsc(doctorId, start, end)
+                .stream().map(this::mapToAppointmentResponse).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AppointmentResponse> getWaitingQueue(UUID doctorId) {
+        return appointmentRepository.findQueueByDoctorAndStatus(doctorId, AppointmentStatus.CHECKED_IN, 
+                org.springframework.data.domain.PageRequest.of(0, 5))
+                .stream().map(this::mapToAppointmentResponse).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<AppointmentResponse> getAppointmentsByDateRange(UUID doctorId, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startOfDay = LocalDateTime.of(startDate, LocalTime.MIN);
         LocalDateTime endOfDay = LocalDateTime.of(endDate, LocalTime.MAX);
@@ -75,6 +130,7 @@ public class DoctorService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<AppointmentResponse> getAllAppointments(UUID doctorId) {
         return appointmentRepository.findByDoctorIdOrderByAppointmentTimeAsc(doctorId)
                 .stream()
@@ -82,6 +138,7 @@ public class DoctorService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public AppointmentResponse getAppointmentDetails(UUID doctorId, UUID appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .filter(a -> a.getDoctor().getId().equals(doctorId))
@@ -109,10 +166,35 @@ public class DoctorService {
         return mapToAppointmentResponse(updatedAppointment);
     }
 
-    public List<Patient> getPatientsForDoctor(UUID doctorId) {
+    @Transactional(readOnly = true)
+    public List<PatientResponse> getPatientsForDoctor(UUID doctorId) {
+        log.info("Fetching patients for doctor {}", doctorId);
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
-        return patientRepository.findByRegisteredBranchId(doctor.getPrimaryBranch().getId());
+        
+        if (doctor.getPrimaryBranch() == null) {
+            log.warn("Doctor {} has no primary branch assigned", doctorId);
+            return List.of();
+        }
+
+        return patientRepository.findByRegisteredBranchId(doctor.getPrimaryBranch().getId())
+                .stream()
+                .map(this::mapToPatientResponse)
+                .collect(Collectors.toList());
+    }
+
+    private PatientResponse mapToPatientResponse(Patient p) {
+        return PatientResponse.builder()
+                .id(p.getId())
+                .firstName(p.getFirstName())
+                .lastName(p.getLastName())
+                .email(p.getEmail())
+                .phone(p.getPhone())
+                .dateOfBirth(p.getDateOfBirth() != null ? LocalDate.parse(p.getDateOfBirth()) : null)
+                .gender(p.getGender())
+                .bloodGroup(p.getBloodGroup())
+                .medicalHistory(p.getMedicalHistory())
+                .build();
     }
 
     @Transactional
@@ -137,6 +219,7 @@ public class DoctorService {
         return mapToClinicalNoteResponse(savedNote);
     }
 
+    @Transactional(readOnly = true)
     public List<ClinicalNoteResponse> getClinicalNotesForPatient(UUID patientId) {
         return clinicalNoteRepository.findByPatientIdOrderByCreatedAtDesc(patientId)
                 .stream()
@@ -144,6 +227,7 @@ public class DoctorService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ClinicalNoteResponse> getClinicalNotesForPatientAsDoctor(UUID doctorId, UUID patientId) {
         // Here we could add a check if the doctor is authorized to view this patient's
         // records
@@ -167,10 +251,25 @@ public class DoctorService {
     }
 
     private AppointmentResponse mapToAppointmentResponse(Appointment appointment) {
+        if (appointment == null) return null;
+        
+        String patientName = "Unknown Patient";
+        UUID patientId = null;
+        
+        if (appointment.getPatient() != null) {
+            patientId = appointment.getPatient().getId();
+            String firstName = appointment.getPatient().getFirstName() != null ? appointment.getPatient().getFirstName() : "";
+            String lastName = appointment.getPatient().getLastName() != null ? appointment.getPatient().getLastName() : "";
+            patientName = (firstName + " " + lastName).trim();
+            if (patientName.isEmpty()) patientName = "Unnamed Patient";
+        } else {
+            log.error("Appointment {} has no patient linked!", appointment.getId());
+        }
+
         return AppointmentResponse.builder()
                 .id(appointment.getId())
-                .patientId(appointment.getPatient().getId())
-                .patientName(appointment.getPatient().getFirstName() + " " + appointment.getPatient().getLastName())
+                .patientId(patientId)
+                .patientName(patientName)
                 .appointmentTime(appointment.getAppointmentTime())
                 .status(appointment.getStatus())
                 .reasonForVisit(appointment.getReasonForVisit())

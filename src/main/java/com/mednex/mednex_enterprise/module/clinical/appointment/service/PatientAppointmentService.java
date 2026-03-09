@@ -11,6 +11,7 @@ import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AvailableSlo
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.DoctorInfoDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointment;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.AppointmentStatus;
+import com.mednex.mednex_enterprise.module.clinical.appointment.entity.UrgencyLevel;
 import com.mednex.mednex_enterprise.module.clinical.appointment.repository.AppointmentRepository;
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import com.mednex.mednex_enterprise.module.clinical.patient.service.PatientService;
@@ -106,10 +107,12 @@ public class PatientAppointmentService {
                 .symptoms(request.getSymptoms())
                 .problemDescription(request.getProblemDescription())
                 .preferredDate(request.getPreferredDate() != null ? request.getPreferredDate().atStartOfDay() : null)
-                .urgencyLevel(request.getUrgencyLevel())
+                .urgencyLevel(request.getUrgencyLevel() != null ? request.getUrgencyLevel() : UrgencyLevel.ROUTINE)
                 .departmentPreference(request.getDepartmentPreference())
+                .branch(patient.getRegisteredBranch()) // Auto-fill branch
                 .status(AppointmentStatus.REQUESTED)
                 .isWalkIn(false)
+                .reasonForVisit(request.getSymptoms()) // Map symptoms to reason initially
                 .build();
 
         appointmentRepository.save(appointment);
