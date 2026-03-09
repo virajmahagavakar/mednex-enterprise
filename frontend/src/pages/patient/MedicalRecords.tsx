@@ -1,5 +1,20 @@
 import { useState, useEffect } from 'react';
-import { FileText, Calendar, User, Clock, CheckCircle2 } from 'lucide-react';
+import { 
+    FileText, 
+    Calendar, 
+    User, 
+    Clock, 
+    CheckCircle2, 
+    Search, 
+    Filter,
+    ClipboardList,
+    Pill,
+    MessageSquare,
+    Printer,
+    Download,
+    CalendarCheck2,
+    Stethoscope
+} from 'lucide-react';
 import { PatientService } from '../../services/patient.service';
 import type { PatientAppointmentResponseDTO } from '../../services/api.types';
 
@@ -8,14 +23,16 @@ export default function MedicalRecords() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [selectedRecord, setSelectedRecord] = useState<PatientAppointmentResponseDTO | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchRecords = async () => {
             try {
                 const data = await PatientService.getPatientAppointments();
-                // Filter only past completed or scheduled if needed, but for "Medical Records" we usually want COMPLETED ones with prescriptions
-                // Or we just show all past appointments
                 setRecords(data);
+                if (data.length > 0) {
+                    setSelectedRecord(data[0]);
+                }
             } catch (err: any) {
                 setError(err.response?.data?.message || 'Failed to fetch medical records.');
             } finally {
@@ -26,140 +43,234 @@ export default function MedicalRecords() {
         fetchRecords();
     }, []);
 
+    const filteredRecords = records.filter(record => 
+        record.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (record.reasonForVisit && record.reasonForVisit.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
     if (loading) {
         return (
-            <div className="flex justify-center p-12">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--primary-color)] border-t-transparent"></div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="p-6">
-                <div className="mb-6 rounded-md bg-red-100 p-4 text-red-700">
-                    {error}
+            <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', opacity: 0.6 }}>
+                <div style={{ height: '2.5rem', width: '200px', backgroundColor: '#e5e7eb', borderRadius: '0.5rem', marginBottom: '2rem' }}></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {[1, 2, 3].map(i => (
+                            <div key={i} style={{ height: '100px', backgroundColor: '#f3f4f6', borderRadius: '1rem' }}></div>
+                        ))}
+                    </div>
+                    <div style={{ height: '600px', backgroundColor: '#f9fafb', borderRadius: '2rem' }}></div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 max-w-6xl mx-auto">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Medical Records & Prescriptions</h1>
-                <p className="text-gray-600">View your past appointment history, doctor's notes, and prescriptions.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Records List Sidebar */}
-                <div className="lg:col-span-1 border border-gray-200 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col h-[600px]">
-                    <div className="p-4 border-b border-gray-100 bg-gray-50">
-                        <h2 className="font-semibold text-gray-800 flex items-center">
-                            <Clock className="w-4 h-4 mr-2" />
-                            Visit History
-                        </h2>
+        <div className="patient-theme" style={{ backgroundColor: 'var(--bg-main)', minHeight: '100vh', padding: '2.5rem' }}>
+            <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+                {/* Header Section */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
+                    <div>
+                        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', fontFamily: 'Outfit' }}>
+                            Medical History & Records
+                        </h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '1.125rem' }}>
+                            Access your complete clinical history, prescriptions, and follow-up notes.
+                        </p>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2">
-                        {records.length === 0 ? (
-                            <div className="p-4 text-center text-gray-500 text-sm">No records found.</div>
-                        ) : (
-                            records.map((record) => {
-                                const dateObj = new Date(record.appointmentTime);
-                                return (
-                                    <button
-                                        key={record.id}
-                                        onClick={() => setSelectedRecord(record)}
-                                        className={`w-full text-left p-4 mb-2 rounded-lg transition-colors ${selectedRecord?.id === record.id
-                                            ? 'bg-green-50 border border-[var(--primary-color)]'
-                                            : 'bg-white border border-gray-100 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className="font-semibold text-gray-900">{dateObj.toLocaleDateString()}</span>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${record.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                                                record.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                {record.status}
-                                            </span>
+                    <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem' }}>
+                        <Download size={18} /> Export Data
+                    </button>
+                </div>
+
+                {error && (
+                    <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '1rem', border: '1px solid #fecaca' }}>
+                        {error}
+                    </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2.2fr', gap: '2rem' }}>
+                    {/* Sidebar */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ position: 'relative' }}>
+                            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                            <input 
+                                type="text"
+                                placeholder="Search records..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '0.875rem 1rem 0.875rem 2.75rem', 
+                                    borderRadius: '1rem', 
+                                    border: '1px solid var(--border)',
+                                    backgroundColor: 'white',
+                                    outline: 'none',
+                                    fontFamily: 'Inter'
+                                }}
+                            />
+                        </div>
+
+                        <div className="custom-scrollbar" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '0.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 0.5rem' }}>
+                                <span>Recent Visits</span>
+                                <span>{filteredRecords.length} Results</span>
+                            </div>
+
+                            {filteredRecords.length === 0 ? (
+                                <div style={{ padding: '3rem 1rem', textAlign: 'center', backgroundColor: 'white', borderRadius: '1.5rem', border: '1px dashed var(--border)' }}>
+                                    <ClipboardList size={40} style={{ color: 'var(--border)', marginBottom: '1rem' }} />
+                                    <p style={{ color: 'var(--text-tertiary)' }}>No records found</p>
+                                </div>
+                            ) : (
+                                filteredRecords.map((record) => {
+                                    const dateObj = new Date(record.appointmentTime);
+                                    const isActive = selectedRecord?.id === record.id;
+                                    return (
+                                        <button
+                                            key={record.id}
+                                            onClick={() => setSelectedRecord(record)}
+                                            style={{ 
+                                                textAlign: 'left',
+                                                padding: '1.25rem',
+                                                borderRadius: '1.5rem',
+                                                border: isActive ? '2px solid var(--primary)' : '1px solid transparent',
+                                                backgroundColor: isActive ? 'white' : 'rgba(255,255,255,0.5)',
+                                                boxShadow: isActive ? 'var(--shadow-md)' : 'none',
+                                                transition: 'all 0.2s',
+                                                position: 'relative',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                                    {dateObj.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                                </span>
+                                                <span style={{ 
+                                                    fontSize: '0.625rem', 
+                                                    fontWeight: 700, 
+                                                    padding: '0.25rem 0.5rem', 
+                                                    borderRadius: '1rem',
+                                                    backgroundColor: record.status === 'COMPLETED' ? '#ecfdf5' : '#eff6ff',
+                                                    color: record.status === 'COMPLETED' ? '#065f46' : '#1e40af'
+                                                }}>
+                                                    {record.status}
+                                                </span>
+                                            </div>
+                                            <div style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: '0.25rem', color: 'var(--text-primary)' }}>
+                                                {dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}
+                                            </div>
+                                            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Stethoscope size={14} color="var(--primary)" /> Dr. {record.doctorName}
+                                            </div>
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Content Area */}
+                    <div style={{ position: 'sticky', top: '2.5rem' }}>
+                        {selectedRecord ? (
+                            <div className="card" style={{ backgroundColor: 'white', borderRadius: '2.5rem', padding: '0', overflow: 'hidden', minHeight: '650px', display: 'flex', flexDirection: 'column', border: '1px solid var(--border-light)' }}>
+                                <div style={{ padding: '2.5rem', borderBottom: '1px solid #f3f4f6', background: 'linear-gradient(to bottom right, #ffffff, #f9fafb)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                            <div style={{ padding: '1rem', backgroundColor: 'var(--primary-light)', borderRadius: '1.25rem' }}>
+                                                <Calendar size={32} color="var(--primary)" />
+                                            </div>
+                                            <div>
+                                                <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>Session Summary</h2>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                                                    <Clock size={16} /> 
+                                                    {new Date(selectedRecord.appointmentTime).toLocaleString(undefined, {
+                                                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit'
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="text-sm text-gray-600 truncate">Dr. {record.doctorName}</div>
-                                        <div className="text-xs text-gray-400 truncate">{record.specialization}</div>
-                                    </button>
-                                );
-                            })
+                                        <div style={{ padding: '1rem', borderRadius: '1.5rem', border: '1px solid #f3f4f6', backgroundColor: 'white', display: 'flex', gap: '1rem', alignItems: 'center', boxShadow: 'var(--shadow-sm)' }}>
+                                            <div style={{ width: '40px', height: '40px', borderRadius: '0.75rem', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <User size={20} color="var(--text-tertiary)" />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Dr. {selectedRecord.doctorName}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>{selectedRecord.specialization}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '2rem', flex: 1, overflowY: 'auto' }}>
+                                    <section>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+                                            <Filter size={14} /> Primary Complaint
+                                        </div>
+                                        <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-main)', borderRadius: '1.5rem', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                            {selectedRecord.reasonForVisit || <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>Not specified</span>}
+                                        </div>
+                                    </section>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem' }}>
+                                        <section>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+                                                <MessageSquare size={14} /> Clinical Notes
+                                            </div>
+                                            <div style={{ padding: '1.5rem', border: '1px solid #f3f4f6', borderRadius: '1.5rem', minHeight: '150px', lineHeight: '1.6', whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>
+                                                {selectedRecord.notes || <span style={{ color: 'var(--text-tertiary)' }}>No detailed clinical observations recorded for this visit.</span>}
+                                            </div>
+                                        </section>
+
+                                        <section>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+                                                <Pill size={14} /> Prescriptions
+                                            </div>
+                                            <div style={{ padding: '1.5rem', backgroundColor: '#f0fdf4', border: '1px solid #dcfce7', borderRadius: '1.5rem', minHeight: '150px', lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#065f46', fontWeight: 500 }}>
+                                                {selectedRecord.prescription || <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>No medication was prescribed during this visit.</span>}
+                                            </div>
+                                        </section>
+                                    </div>
+
+                                    <div style={{ marginTop: 'auto', textAlign: 'center', padding: '2rem 1rem', borderTop: '1px solid #f3f4f6', color: 'var(--text-tertiary)', fontSize: '0.875rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                                        <CheckCircle2 size={16} color="var(--success)" /> Verified Mednex Clinical Record
+                                        <div style={{ marginLeft: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                            <button className="btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', backgroundColor: 'white' }}>
+                                                <Printer size={12} /> Print
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ backgroundColor: 'white', borderRadius: '2.5rem', border: '2px dashed var(--border)', height: '650px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', padding: '2rem', textAlign: 'center' }}>
+                                <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                                    <FileText size={48} color="var(--border)" />
+                                </div>
+                                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Selection</h3>
+                                <p style={{ maxWidth: '300px' }}>Choose a visit from the list to view full session details, clinical notes, and prescriptions.</p>
+                            </div>
                         )}
                     </div>
                 </div>
-
-                {/* Record Details View */}
-                <div className="lg:col-span-2">
-                    {selectedRecord ? (
-                        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 h-[600px] flex flex-col">
-                            <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-6">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-1 flex items-center">
-                                        Visit Summary
-                                        {selectedRecord.status === 'COMPLETED' && (
-                                            <CheckCircle2 className="w-5 h-5 ml-2 text-green-500" />
-                                        )}
-                                    </h2>
-                                    <p className="text-gray-500 flex items-center">
-                                        <Calendar className="w-4 h-4 mr-2" />
-                                        {new Date(selectedRecord.appointmentTime).toLocaleString(undefined, {
-                                            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                                            hour: '2-digit', minute: '2-digit'
-                                        })}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="font-semibold text-gray-900 flex items-center justify-end">
-                                        <User className="w-4 h-4 mr-1" />
-                                        Dr. {selectedRecord.doctorName}
-                                    </div>
-                                    <div className="text-sm text-[var(--primary-color)]">{selectedRecord.specialization}</div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto pr-2">
-                                {/* Reason for Visit */}
-                                <div className="mb-6">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Reason for Visit</h3>
-                                    <div className="bg-gray-50 p-4 rounded-lg text-gray-800">
-                                        {selectedRecord.reasonForVisit || <span className="text-gray-400 italic">Not specified</span>}
-                                    </div>
-                                </div>
-
-                                {/* Doctor's Notes */}
-                                <div className="mb-6">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Doctor's Notes</h3>
-                                    <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-lg text-gray-800 whitespace-pre-wrap min-h-[100px]">
-                                        {selectedRecord.notes || <span className="text-gray-400 italic">No notes recorded yet.</span>}
-                                    </div>
-                                </div>
-
-                                {/* Prescription */}
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        Prescription
-                                    </h3>
-                                    <div className="bg-green-50/50 border border-green-100 p-4 rounded-lg text-gray-800 whitespace-pre-wrap min-h-[100px]">
-                                        {selectedRecord.prescription || <span className="text-gray-400 italic">No prescription issued.</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl h-[600px] flex flex-col items-center justify-center text-gray-500">
-                            <FileText className="w-16 h-16 mb-4 text-gray-300" />
-                            <p className="text-lg font-medium">Select a record</p>
-                            <p className="text-sm">Choose a visit from the left menu to view details.</p>
-                        </div>
-                    )}
-                </div>
             </div>
+
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: var(--border);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: var(--text-tertiary);
+                }
+            `}</style>
         </div>
     );
 }

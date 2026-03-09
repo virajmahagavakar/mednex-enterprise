@@ -9,6 +9,8 @@ export interface AuthResponse {
     token: string;
     refreshToken: string;
     hospitalId: string;
+    name: string;
+    email: string;
 }
 
 export interface RefreshRequest {
@@ -133,22 +135,67 @@ export interface SubscriptionResponse {
 export interface DoctorDashboardStatsDTO {
     totalPatients: number;
     todayAppointments: number;
-    upcomingAppointments: number;
-    pendingPrescriptions: number;
+    waitingQueueCount: number;
+    checkedInToday: number;
+    completedToday: number;
 }
+
+export interface DoctorScheduleDTO {
+    id?: number;
+    dayOfWeek: string;
+    startTime: string; // "HH:mm:ss"
+    endTime: string;   // "HH:mm:ss"
+    slotDuration: number;
+    active: boolean;
+}
+
+export type AppointmentStatus = 'REQUESTED' | 'PENDING' | 'CONFIRMED' | 'SCHEDULED' | 'CHECKED_IN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED';
 
 export interface AppointmentResponse {
     id: string; // UUID
     patientId: string;
     patientName: string;
     appointmentTime: string; // ISO DateTime string
-    status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    status: AppointmentStatus;
     reasonForVisit?: string;
+    notes?: string;
+    tokenNumber?: number;
+    isWalkIn?: boolean;
+}
+
+export interface Appointment {
+    id: string;
+    patient: {
+        id: string;
+        user: {
+            name: string;
+        };
+    };
+    doctor: {
+        id: string;
+        name: string;
+    };
+    appointmentTime: string;
+    status: AppointmentStatus;
+    tokenNumber?: number;
+    isWalkIn: boolean;
+    reasonForVisit?: string;
+    problemDescription?: string;
+    symptoms?: string;
+    urgencyLevel: 'ROUTINE' | 'URGENT' | 'EMERGENCY' | 'CRITICAL';
+    departmentPreference?: string;
     notes?: string;
 }
 
+export interface TriageUpdateRequest {
+    doctorId?: string;
+    departmentId?: string;
+    urgencyLevel?: 'ROUTINE' | 'URGENT' | 'EMERGENCY' | 'CRITICAL';
+    slotTime?: string;
+}
+
 export interface AppointmentUpdateRequest {
-    status?: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    status?: AppointmentStatus;
     notes?: string;
     prescription?: string;
 }
@@ -249,9 +296,12 @@ export interface AvailableSlotDTO {
 }
 
 export interface AppointmentBookingRequest {
-    doctorId: string; // UUID
-    appointmentTime: string; // ISO DateTime string
-    reasonForVisit?: string;
+    doctorId?: string; // Optional doctor preference
+    appointmentTime?: string; // Optional preferred time
+    reasonForVisit: string;
+    problemDescription: string;
+    symptoms: string;
+    departmentPreference?: string;
 }
 
 export interface PatientAppointmentResponseDTO {

@@ -68,7 +68,7 @@ const ReceptionistLayout = () => {
         { name: 'Appointments', path: '/receptionist/appointments', icon: <Calendar size={20} /> },
         { name: 'Ward Management', path: '/receptionist/wards', icon: <BedDouble size={20} /> },
         { name: 'ICU Availability', path: '/receptionist/icu', icon: <Activity size={20} /> },
-        { name: 'OT Scheduling', path: '/receptionist/ot', icon: <Clock size={20} /> },
+        { name: 'OT Scheduling', path: '/receptionist/ot-schedule', icon: <Clock size={20} /> },
         { name: 'Billing', path: '/receptionist/billing', icon: <CreditCard size={20} /> },
     ];
 

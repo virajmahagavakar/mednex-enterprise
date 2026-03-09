@@ -1,48 +1,35 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Bed, Home, AlertCircle, Search, Filter, RefreshCw, ChevronRight } from 'lucide-react';
 import { ReceptionistService } from '../../services/receptionist.service';
+import { AdminService } from '../../services/admin.service';
 import type { WardDTO, BedDTO } from '../../services/api.types';
-import { TokenService } from '../../services/api.client';
-import { jwtDecode } from 'jwt-decode';
 
-interface JWTPayload {
-    hospital_id?: string;
-    // Assuming the user token also includes primary_branch_id or we get it from profile
-    // For now, we might hardcode or expect a branch selection
-}
-
-const WardManagement = () => {
+const WardManagement: React.FC = () => {
     const [wards, setWards] = useState<WardDTO[]>([]);
     const [selectedWard, setSelectedWard] = useState<WardDTO | null>(null);
     const [beds, setBeds] = useState<BedDTO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [branchName, setBranchName] = useState('Loading...');
 
     useEffect(() => {
-        // Try to get a branch ID. Since branches are complex, we could fetch all branches 
-        // and let the user select, or use a default one for now to test.
-        // Wait, the API `getWards` requires a `branchId`. We should probably fetch the branchId from the user's profile.
-        // For demonstration, let's assume we have a way or just prompt/fetch for the first branch.
-        loadWards();
+        loadBranchAndWards();
     }, []);
 
-    const loadWards = async () => {
+    const loadBranchAndWards = async () => {
         setIsLoading(true);
         try {
-            // Ideally fetch branchId from profile. For now, we will leave it as an empty string to fetch all if the backend allows it,
-            // or we might need to properly integrate this. Let's pass a known branch ID or fetch branches first.
-            // Actually, we'll need to fetch the branches the nurse has access to.
-            // To simplify, let's fetch branches from AdminService if possible, or just mock it.
-            // In a real app, this should come from context. (We'll hardcode or skip branchId if backend allows).
-            // Wait, backend requires @RequestParam UUID branchId.
-            // Let's just catch the error if we can't fetch it yet.
-            const token = TokenService.getToken();
-            let tenantId = "";
-            if (token) {
-                const decoded = jwtDecode<JWTPayload>(token);
-                tenantId = decoded.hospital_id || "";
+            const profile = await AdminService.getCurrentProfile();
+            const branchId = profile.branch?.id;
+            const bName = profile.branch?.name || "Main Branch";
+            setBranchName(bName);
+
+            if (branchId) {
+                const data = await ReceptionistService.getWardsByBranch(branchId);
+                setWards(data);
+                if (data.length > 0 && !selectedWard) {
+                    handleSelectWard(data[0]);
+                }
             }
-            // Temporarily calling it with a dummy or failing gracefully.
-            // We should ideally fetch the current user's primary branch from the Profile endpoint.
-            console.log("Need to implement branch selection for Ward Management");
         } catch (error) {
             console.error("Failed to load wards", error);
         } finally {
@@ -61,111 +48,156 @@ const WardManagement = () => {
     };
 
     return (
-        <div className="ward-management-container" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-            <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Ward Management</h1>
-                <p style={{ color: 'var(--text-secondary)' }}>Monitor bed occupancy and manage ward capacity.</p>
+        <div className="page-container">
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h1 className="page-title">Ward Management</h1>
+                    <p className="page-description">Managing occupancy for <strong>{branchName}</strong>.</p>
+                </div>
+                <button className="btn-secondary" onClick={loadBranchAndWards}>
+                    <RefreshCw size={18} />
+                    <span>Refresh</span>
+                </button>
             </div>
 
-            <div style={{ background: '#FFFBEB', padding: '1rem', borderRadius: '8px', border: '1px solid #FDE68A', color: '#B45309', marginBottom: '2rem' }}>
-                Note: In a complete implementation, this view would first fetch the Nurse's primary branch to load the available Wards.
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem', alignItems: 'start' }}>
-                <div style={{ background: 'white', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflow: 'hidden' }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-main)', fontWeight: 600 }}>
-                        Hospital Wards
+            <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem', alignItems: 'start' }}>
+                {/* Ward List Sidebar */}
+                <div className="card" style={{ height: 'calc(100vh - 250px)', display: 'flex', flexDirection: 'column' }}>
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ gap: '0.5rem' }}><Home size={20} className="text-primary" /> All Wards</h3>
+                        <span className="status-badge-sm" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                            {wards.length}
+                        </span>
                     </div>
-                    {isLoading ? (
-                        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Wards...</div>
-                    ) : wards.length === 0 ? (
-                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>No Wards Available</div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            {wards.map(ward => (
+                    
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem' }}>
+                        {isLoading ? (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>Loading...</div>
+                        ) : wards.length === 0 ? (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>No Wards Found</div>
+                        ) : (
+                            wards.map(ward => (
                                 <div
                                     key={ward.id}
                                     onClick={() => handleSelectWard(ward)}
                                     style={{
-                                        padding: '1rem',
-                                        borderBottom: '1px solid var(--border-light)',
+                                        padding: '1.25rem',
+                                        borderRadius: 'var(--radius-md)',
+                                        marginBottom: '0.5rem',
                                         cursor: 'pointer',
-                                        backgroundColor: selectedWard?.id === ward.id ? 'var(--bg-hover)' : 'white',
-                                        borderLeft: selectedWard?.id === ward.id ? '4px solid var(--primary)' : '4px solid transparent',
-                                        transition: 'all 0.2s'
+                                        backgroundColor: selectedWard?.id === ward.id ? 'var(--primary-light)' : 'transparent',
+                                        border: selectedWard?.id === ward.id ? '1px solid var(--primary)' : '1px solid transparent',
+                                        transition: 'all 0.2s ease-in-out'
                                     }}
                                 >
-                                    <div style={{ fontWeight: 600 }}>{ward.name}</div>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                        Capacity: {ward.occupiedBeds} / {ward.totalCapacity}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span style={{ fontWeight: 600, color: selectedWard?.id === ward.id ? 'var(--primary)' : 'var(--text-primary)' }}>
+                                            {ward.name}
+                                        </span>
+                                        <ChevronRight size={16} style={{ opacity: selectedWard?.id === ward.id ? 1 : 0.3 }} />
                                     </div>
-                                    <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--bg-main)', marginTop: '0.5rem', borderRadius: '2px', overflow: 'hidden' }}>
-                                        <div style={{ width: `${(ward.occupiedBeds / ward.totalCapacity) * 100}%`, height: '100%', backgroundColor: ward.occupiedBeds === ward.totalCapacity ? 'var(--danger)' : 'var(--primary)' }}></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                            {ward.occupiedBeds} / {ward.totalCapacity} Beds
+                                        </div>
+                                        <div style={{ width: '100px', height: '6px', backgroundColor: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                                            <div style={{ 
+                                                width: `${(ward.occupiedBeds / ward.totalCapacity) * 100}%`, 
+                                                height: '100%', 
+                                                backgroundColor: (ward.occupiedBeds / ward.totalCapacity) > 0.9 ? 'var(--danger)' : 'var(--primary)' 
+                                            }} />
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Bed Grid Display */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {selectedWard ? (
+                        <>
+                            <div className="card">
+                                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ gap: '0.5rem' }}>
+                                        <Bed size={20} className="text-primary" />
+                                        {selectedWard.name} Unit Visualization
+                                    </h3>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: 600 }}>
+                                            <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: 'var(--success)' }} />
+                                            Available
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: 600 }}>
+                                            <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: 'var(--danger)' }} />
+                                            Occupied
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="panel-body">
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1rem' }}>
+                                        {beds.map(bed => {
+                                            const statusColor = bed.status === 'AVAILABLE' ? 'var(--success)' : (bed.status === 'OCCUPIED' ? 'var(--danger)' : 'var(--warning)');
+                                            const statusBg = bed.status === 'AVAILABLE' ? 'var(--success-bg)' : (bed.status === 'OCCUPIED' ? 'var(--danger-bg)' : 'var(--warning-bg)');
+                                            
+                                            return (
+                                                <div key={bed.id} style={{
+                                                    padding: '1.5rem 1rem',
+                                                    borderRadius: 'var(--radius-lg)',
+                                                    border: `1.5px solid ${statusColor}`,
+                                                    backgroundColor: statusBg,
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '0.5rem',
+                                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                                                    transition: 'transform 0.2s',
+                                                    cursor: 'default'
+                                                }}>
+                                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: statusColor }}>{bed.bedNumber}</div>
+                                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>ROOM {bed.roomNumber}</div>
+                                                    <span style={{ 
+                                                        fontSize: '0.65rem', 
+                                                        fontWeight: 800, 
+                                                        padding: '0.2rem 0.5rem', 
+                                                        borderRadius: '4px', 
+                                                        background: 'white',
+                                                        color: statusColor,
+                                                        border: `1px solid ${statusColor}`
+                                                    }}>
+                                                        {bed.status}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="card" style={{ backgroundColor: 'var(--bg-main)', border: '1.5px dashed var(--border)' }}>
+                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                    <AlertCircle size={32} style={{ marginBottom: '1rem', opacity: 0.5, margin: '0 auto' }} />
+                                    <h4>Admission Control</h4>
+                                    <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Select a bed to process a direct IPD admission or transfer from ER.</p>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="card" style={{ padding: '4rem', textAlign: 'center' }}>
+                            <div style={{ opacity: 0.3, marginBottom: '1.5rem' }}>
+                                <Bed size={64} style={{ margin: '0 auto' }} />
+                            </div>
+                            <h3>Select a ward to view real-time occupancy</h3>
+                            <p style={{ color: 'var(--text-tertiary)', marginTop: '0.5rem' }}>Unit telemetry and patient assignment will be displayed here.</p>
                         </div>
                     )}
                 </div>
-
-                {selectedWard && (
-                    <div style={{ background: 'white', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '1.5rem' }}>
-                        <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{selectedWard.name} - Beds</h2>
-                            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 12, height: 12, backgroundColor: '#10B981', borderRadius: '50%' }}></div> Available</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 12, height: 12, backgroundColor: '#EF4444', borderRadius: '50%' }}></div> Occupied</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 12, height: 12, backgroundColor: '#F59E0B', borderRadius: '50%' }}></div> Maintenance</span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '1rem' }}>
-                            {beds.map(bed => {
-                                let bgColor = 'white';
-                                let borderColor = 'var(--border-light)';
-                                let textColor = 'var(--text-main)';
-
-                                if (bed.status === 'AVAILABLE') {
-                                    bgColor = '#ECFDF5';
-                                    borderColor = '#10B981';
-                                    textColor = '#047857';
-                                } else if (bed.status === 'OCCUPIED') {
-                                    bgColor = '#FEF2F2';
-                                    borderColor = '#EF4444';
-                                    textColor = '#B91C1C';
-                                } else if (bed.status === 'MAINTENANCE') {
-                                    bgColor = '#FFFBEB';
-                                    borderColor = '#F59E0B';
-                                    textColor = '#B45309';
-                                }
-
-                                return (
-                                    <div key={bed.id} style={{
-                                        border: `2px solid ${borderColor}`,
-                                        backgroundColor: bgColor,
-                                        color: textColor,
-                                        borderRadius: '8px',
-                                        padding: '1rem',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        textAlign: 'center',
-                                        boxShadow: 'var(--shadow-sm)'
-                                    }}>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{bed.bedNumber}</div>
-                                        <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', opacity: 0.8 }}>Room {bed.roomNumber}</div>
-                                        <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', fontWeight: 600, textTransform: 'uppercase' }}>{bed.status}</div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )
-                }
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 
 export default WardManagement;
+

@@ -18,12 +18,13 @@ interface JWTPayload {
     sub: string;
     roles?: string[];
     hospital_id?: string;
+    name?: string;
     exp: number;
 }
 
 const DoctorLayout = () => {
     const navigate = useNavigate();
-    const [userEmail, setUserEmail] = useState<string>('Doctor User');
+    const [userName, setUserName] = useState<string>('Doctor');
     const [userRole, setUserRole] = useState<string>('Doctor');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -35,7 +36,7 @@ const DoctorLayout = () => {
         } else {
             try {
                 const decoded = jwtDecode<JWTPayload>(token);
-                setUserEmail(decoded.sub || 'Doctor User');
+                setUserName(decoded.name || 'Doctor');
 
                 let roleDisplay = 'Doctor';
                 if (decoded.roles && decoded.roles.length > 0) {
@@ -110,9 +111,9 @@ const DoctorLayout = () => {
                     <div className="header-right">
                         <div className="user-profile-container">
                             <div className="user-profile" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                                <div className="avatar">{userEmail.charAt(0).toUpperCase()}</div>
+                                <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
                                 <div className="user-info">
-                                    <span className="user-name">{userEmail}</span>
+                                    <span className="user-name">{userName}</span>
                                     <span className="user-role">{userRole}</span>
                                 </div>
                             </div>
@@ -120,7 +121,7 @@ const DoctorLayout = () => {
                             {isDropdownOpen && (
                                 <div className="profile-dropdown">
                                     <div className="dropdown-header">
-                                        <p className="dropdown-name">{userEmail}</p>
+                                        <p className="dropdown-name">{userName}</p>
                                         <p className="dropdown-role">{userRole}</p>
                                     </div>
                                     <div className="dropdown-divider"></div>
@@ -146,10 +147,10 @@ const DoctorLayout = () => {
             <ProfileModal
                 isOpen={isProfileModalOpen}
                 onClose={() => setIsProfileModalOpen(false)}
-                userEmail={userEmail}
+                userEmail={userName}
                 userRole={userRole}
                 onProfileUpdated={(name) => {
-                    setUserEmail(name);
+                    setUserName(name);
                 }}
             />
 

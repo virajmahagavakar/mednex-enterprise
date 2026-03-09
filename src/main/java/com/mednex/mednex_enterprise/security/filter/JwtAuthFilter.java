@@ -49,9 +49,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             userEmail = jwtService.extractUsername(jwt);
             tenantId = jwtService.extractTenantId(jwt);
+        } catch (Exception e) {
+            // Only catch JWT parsing/validation errors here
+            System.err.println("JWT Token Invalid: " + e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Invalid or expired token\"}");
+            return;
+        }
 
+        try {
             // Critical! Set the tenant context so the Database Route hits the right schemas
-            // When querying User Details.
             if (tenantId != null) {
                 TenantContext.setCurrentTenant(tenantId);
             }
@@ -71,13 +79,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             filterChain.doFilter(request, response);
-        } catch (Exception e) {
-            // Token is invalid, expired, or malformed
-            System.err.println("JWT Authentication Failed: " + e.getMessage());
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + e.getMessage() + "\"}");
-            return;
         } finally {
             TenantContext.clear();
         }

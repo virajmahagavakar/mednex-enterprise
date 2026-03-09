@@ -40,6 +40,8 @@ const Login = () => {
                 const isDoctor = roles.some(r => r.includes('DOCTOR') || r.includes('SURGEON') || r.includes('CONSULTANT'));
                 const isReceptionist = roles.some(r => r.includes('RECEPTIONIST'));
                 const isNurse = roles.some(r => r.includes('NURSE'));
+                const isLabTech = roles.some(r => r.includes('LAB_TECHNICIAN'));
+                const isRadiologist = roles.some(r => r.includes('RADIOLOGIST'));
 
                 if (isDoctor) {
                     navigate('/doctor');
@@ -47,6 +49,10 @@ const Login = () => {
                     navigate('/receptionist');
                 } else if (isNurse) {
                     navigate('/nurse');
+                } else if (isLabTech) {
+                    navigate('/lab');
+                } else if (isRadiologist) {
+                    navigate('/radiology');
                 } else if (roles.includes('PATIENT')) {
                     navigate('/patient-portal');
                 } else {

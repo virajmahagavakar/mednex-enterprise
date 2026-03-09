@@ -14,7 +14,8 @@ import type {
     AdmissionDTO,
     AdmissionRequest,
     DailyRoundDTO,
-    DailyRoundRequest
+    DailyRoundRequest,
+    DoctorScheduleDTO
 } from './api.types';
 
 const DOCTOR_API_PREFIX = '/v1/clinical/doctors';
@@ -113,5 +114,20 @@ export const DoctorService = {
     getDailyRounds: async (admissionId: string): Promise<DailyRoundDTO[]> => {
         const { data } = await apiClient.get<DailyRoundDTO[]>(`${IPD_API_PREFIX}/admissions/${admissionId}/rounds`);
         return data;
+    },
+
+    // Schedule Endpoints
+    getSchedules: async (): Promise<DoctorScheduleDTO[]> => {
+        const { data } = await apiClient.get<DoctorScheduleDTO[]>(`${DOCTOR_API_PREFIX}/schedules`);
+        return data;
+    },
+
+    saveSchedule: async (request: DoctorScheduleDTO): Promise<DoctorScheduleDTO> => {
+        const { data } = await apiClient.post<DoctorScheduleDTO>(`${DOCTOR_API_PREFIX}/schedules`, request);
+        return data;
+    },
+
+    deleteSchedule: async (id: number): Promise<void> => {
+        await apiClient.delete(`${DOCTOR_API_PREFIX}/schedules/${id}`);
     }
 };

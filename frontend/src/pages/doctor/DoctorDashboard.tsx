@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DoctorService } from '../../services/doctor.service';
+import { TokenService } from '../../services/api.client';
 import type { DoctorDashboardStatsDTO, AppointmentResponse } from '../../services/api.types';
 import { Users, Calendar, Clock, Activity, Search } from 'lucide-react';
 
@@ -9,6 +10,7 @@ const DoctorDashboard = () => {
     const [stats, setStats] = useState<DoctorDashboardStatsDTO | null>(null);
     const [todayAppointments, setTodayAppointments] = useState<AppointmentResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const doctorName = TokenService.getUserName() || 'Doctor';
 
     useEffect(() => {
         fetchDashboardData();
@@ -39,6 +41,7 @@ const DoctorDashboard = () => {
     const getStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'SCHEDULED': return 'status-upcoming';
+            case 'CHECKED_IN': return 'status-active';
             case 'IN_PROGRESS': return 'status-active';
             case 'COMPLETED': return 'status-completed';
             case 'CANCELLED': return 'status-cancelled';
@@ -54,12 +57,12 @@ const DoctorDashboard = () => {
         <div className="page-container">
             <div className="page-header">
                 <div>
-                    <h2 className="page-title">Welcome, Doctor</h2>
+                    <h2 className="page-title">Welcome, Dr. {doctorName}</h2>
                     <p className="page-description">Here's an overview of your day</p>
                 </div>
-                <button className="btn-primary" style={{ width: 'auto', padding: '0.625rem 1.25rem' }}>
+                <button className="btn-primary" style={{ width: 'auto', padding: '0.625rem 1.25rem' }} onClick={() => navigate('/doctor/schedule')}>
                     <Calendar size={18} />
-                    View Full Schedule
+                    Manage Schedule
                 </button>
             </div>
 
@@ -79,7 +82,7 @@ const DoctorDashboard = () => {
                         <Calendar size={24} />
                     </div>
                     <div className="stat-content">
-                        <p className="stat-label">Today's Appointments</p>
+                        <p className="stat-label">Today's Total</p>
                         <h4 className="stat-value">{stats?.todayAppointments || 0}</h4>
                     </div>
                 </div>
@@ -88,17 +91,17 @@ const DoctorDashboard = () => {
                         <Clock size={24} />
                     </div>
                     <div className="stat-content">
-                        <p className="stat-label">Upcoming</p>
-                        <h4 className="stat-value">{stats?.upcomingAppointments || 0}</h4>
+                        <p className="stat-label">Waiting Queue</p>
+                        <h4 className="stat-value">{stats?.waitingQueueCount || 0}</h4>
                     </div>
                 </div>
                 <div className="card stat-card">
-                    <div className="stat-icon" style={{ backgroundColor: '#FEE2E2', color: '#DC2626' }}>
+                    <div className="stat-icon" style={{ backgroundColor: '#E0F2FE', color: '#0284C7' }}>
                         <Activity size={24} />
                     </div>
                     <div className="stat-content">
-                        <p className="stat-label">Pending Prescriptions</p>
-                        <h4 className="stat-value">{stats?.pendingPrescriptions || 0}</h4>
+                        <p className="stat-label">Completed Today</p>
+                        <h4 className="stat-value">{stats?.completedToday || 0}</h4>
                     </div>
                 </div>
             </div>

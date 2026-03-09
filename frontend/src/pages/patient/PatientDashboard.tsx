@@ -1,40 +1,76 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Activity, FileText } from 'lucide-react';
+import { Calendar, Clock, Activity, FileText, AlertCircle } from 'lucide-react';
+import { PatientService } from '../../services/patient.service';
+import type { PatientDashboardStatsDTO, PatientAppointmentResponseDTO } from '../../services/api.types';
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
-    const [stats, setStats] = useState({
+    const [stats, setStats] = useState<PatientDashboardStatsDTO>({
         upcomingAppointments: 0,
         totalPrescriptions: 0,
         unreadMessages: 0,
         nextAppointmentDate: null
     });
+    const [nextAppointment, setNextAppointment] = useState<PatientAppointmentResponseDTO | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        // Will fetch actual stats here
-        setTimeout(() => {
-            setStats({
-                upcomingAppointments: 1,
-                totalPrescriptions: 2,
-                unreadMessages: 0,
-                nextAppointmentDate: null
-            });
-            setIsLoading(false);
-        }, 800);
+        const fetchDashboardData = async () => {
+            try {
+                setIsLoading(true);
+                const [statsData, appointmentsData] = await Promise.all([
+                    PatientService.getDashboardStats(),
+                    PatientService.getPatientAppointments()
+                ]);
+                
+                setStats(statsData);
+
+                // Find the soonest upcoming appointment
+                const now = new Date();
+                const upcoming = appointmentsData
+                    .filter(app => new Date(app.appointmentTime) > now && app.status !== 'CANCELLED')
+                    .sort((a, b) => new Date(a.appointmentTime).getTime() - new Date(b.appointmentTime).getTime());
+
+                if (upcoming.length > 0) {
+                    setNextAppointment(upcoming[0]);
+                }
+                
+                setError('');
+            } catch (err: any) {
+                console.error('Dashboard load error:', err);
+                setError('Failed to load dashboard data. Please try again later.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboardData();
     }, []);
 
     if (isLoading) {
-        return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading your dashboard...</div>;
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', flexDirection: 'column', gap: '1rem' }}>
+                <Activity size={36} color="var(--primary-color)" className="animate-spin" />
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Loading your dashboard...</p>
+            </div>
+        );
     }
 
     return (
-        <div>
+        <div style={{ padding: '1.5rem' }}>
             <div style={{ marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '2rem', color: 'var(--primary-dark)', marginBottom: '0.5rem' }}>Welcome Back</h1>
                 <p style={{ color: 'var(--text-secondary)' }}>Here is an overview of your health information.</p>
             </div>
+
+            {error && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', marginBottom: '1.5rem', color: '#b91c1c' }}>
+                    <AlertCircle size={18} />
+                    <span style={{ fontSize: '0.9rem' }}>{error}</span>
+                </div>
+            )}
 
             {/* Dashboard Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
@@ -61,34 +97,37 @@ const PatientDashboard = () => {
                 </div>
 
                 {/* Stat Card 3 */}
-                <div className="card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', backgroundColor: 'var(--bg-surface)' }}>
+                <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/patient-portal/records')} style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', backgroundColor: 'var(--bg-surface)' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#E0F2FE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Activity size={24} color="#0284C7" />
                     </div>
                     <div>
-                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{stats.unreadMessages}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{stats.unreadMessages || 0}</div>
                         <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Lab Reports</div>
                     </div>
                 </div>
             </div>
 
             {/* Main Content Split */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 <div className="card" style={{ backgroundColor: 'var(--bg-surface)', padding: '2rem' }}>
                     <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-dark)' }}>
                         <Clock size={20} /> Next Appointment
                     </h2>
 
-                    {stats.upcomingAppointments > 0 ? (
+                    {nextAppointment ? (
                         <div style={{ padding: '1.5rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>Dr. Sarah Jenkins</div>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>General Checkup</div>
+                                <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>Dr. {nextAppointment.doctorName}</div>
+                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{nextAppointment.specialization}</div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', color: 'var(--primary-dark)', fontSize: '0.875rem', fontWeight: 500 }}>
-                                    <Calendar size={14} /> Thursday, 14 Oct • 10:30 AM
+                                    <Calendar size={14} /> 
+                                    {new Date(nextAppointment.appointmentTime).toLocaleString(undefined, {
+                                        weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                    })}
                                 </div>
                             </div>
-                            <button className="btn-accent" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Reschedule</button>
+                            <button className="btn-accent" onClick={() => navigate('/patient-portal/appointments')} style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>View Details</button>
                         </div>
                     ) : (
                         <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-lg)' }}>
@@ -102,10 +141,25 @@ const PatientDashboard = () => {
 
                 <div className="card" style={{ backgroundColor: 'var(--bg-surface)', padding: '2rem' }}>
                     <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-dark)' }}>
-                        <Activity size={20} /> Latest Vitals
+                        <Activity size={20} /> Quick Actions
                     </h2>
-                    <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 0' }}>
-                        No vitals recorded yet.
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <button 
+                            onClick={() => navigate('/patient-portal/book-appointment')}
+                            className="btn-outline" 
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem', gap: '0.5rem' }}
+                        >
+                            <Calendar size={24} />
+                            <span>Book Visit</span>
+                        </button>
+                        <button 
+                            onClick={() => navigate('/patient-portal/records')}
+                            className="btn-outline" 
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem', gap: '0.5rem' }}
+                        >
+                            <FileText size={24} />
+                            <span>My Records</span>
+                        </button>
                     </div>
                 </div>
             </div>

@@ -30,7 +30,7 @@ public class Patient {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "registered_branch_id", nullable = false)
+    @JoinColumn(name = "registered_branch_id", nullable = true)
     private Branch registeredBranch;
 
     @Column(name = "first_name", nullable = false)
@@ -42,11 +42,11 @@ public class Patient {
     @Column(unique = true)
     private String email;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = true)
     private String phone;
 
     @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
+    private String dateOfBirth;
 
     @Column
     private String gender; // MALE, FEMALE, OTHER

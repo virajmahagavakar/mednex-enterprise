@@ -31,15 +31,18 @@ export const TokenService = {
     },
     getRefreshToken: () => localStorage.getItem('refreshToken'),
     getHospitalId: () => localStorage.getItem('hospitalId'),
+    getUserName: () => localStorage.getItem('userName'),
     setTokens: (auth: AuthResponse) => {
         localStorage.setItem('accessToken', auth.token);
         localStorage.setItem('refreshToken', auth.refreshToken);
+        localStorage.setItem('userName', auth.name);
         if (auth.hospitalId) localStorage.setItem('hospitalId', auth.hospitalId);
     },
     clearTokens: () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('hospitalId');
+        localStorage.removeItem('userName');
     }
 };
 

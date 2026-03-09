@@ -5,12 +5,13 @@ import type {
     OperationTheatreDTO,
     SurgeryStatus
 } from '../../services/api.types';
-import { Calendar, Clock, Activity, Users, Plus, CheckCircle, Stethoscope, Syringe, MoreVertical } from 'lucide-react';
+import { Calendar, Clock, Activity, Users, Plus, CheckCircle, Stethoscope, Syringe, Trash2, Filter, AlertCircle } from 'lucide-react';
 
 export const OTDashboard = () => {
     const [schedule, setSchedule] = useState<SurgeryScheduleDTO[]>([]);
     const [theatres, setTheatres] = useState<OperationTheatreDTO[]>([]);
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Notes Modal State
     const [activeSurgeryContext, setActiveSurgeryContext] = useState<SurgeryScheduleDTO | null>(null);
@@ -48,6 +49,7 @@ export const OTDashboard = () => {
     };
 
     const fetchSchedule = async () => {
+        setIsLoading(true);
         try {
             const start = `${selectedDate}T00:00:00`;
             const end = `${selectedDate}T23:59:59`;
@@ -55,6 +57,8 @@ export const OTDashboard = () => {
             setSchedule(data);
         } catch (error) {
             console.error("Failed to load surgery schedule", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -81,7 +85,6 @@ export const OTDashboard = () => {
             setSurgicalNoteModalOpen(false);
         } catch (error) {
             console.error("Failed to submit surgical note", error);
-            alert("Error submitting note.");
         }
     };
 
@@ -98,7 +101,6 @@ export const OTDashboard = () => {
             setAnesthesiaNoteModalOpen(false);
         } catch (error) {
             console.error("Failed to submit anesthesia note", error);
-            alert("Error submitting note.");
         }
     };
 
@@ -107,211 +109,224 @@ export const OTDashboard = () => {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center mb-8">
+        <div className="page-container">
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 border-b-4 border-rose-500 pb-2 inline-block">
-                        Operation Theatre (OT) Hub
-                    </h1>
-                    <p className="text-gray-500 mt-2">Manage daily surgical schedules and intra-operative documentation.</p>
+                    <h1 className="page-title">OT Scheduling Hub</h1>
+                    <p className="page-description">Managing surgical units and perioperative documentation.</p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="border-gray-300 rounded-md shadow-sm focus:border-rose-500 focus:ring-rose-500"
-                    />
-                    <button className="bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm transition-colors">
-                        <Plus className="w-4 h-4" /> Book OT Slot
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="btn-secondary"
+                            style={{ paddingRight: '1rem', cursor: 'pointer' }}
+                        />
+                    </div>
+                    <button className="btn-primary">
+                        <Plus size={18} />
+                        <span>Schedule Surgery</span>
                     </button>
                 </div>
             </div>
 
-            {/* Theatre Status Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Theatre Status Summary */}
+            <div className="dashboard-stats-grid">
                 {theatres.map(theatre => (
-                    <div key={theatre.id} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-rose-100 p-3 rounded-lg text-rose-600">
-                                <Activity className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-gray-900">{theatre.name}</h3>
-                                <p className="text-xs text-gray-500">{theatre.location}</p>
-                            </div>
+                    <div key={theatre.id} className="stat-card">
+                        <div className="stat-icon" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                            <Activity size={24} />
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active
+                        <div className="stat-info">
+                            <span className="stat-label">{theatre.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--success)', animation: 'pulse 2s infinite' }} />
+                                <span className="stat-value" style={{ fontSize: '1rem' }}>Active</span>
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Daily Schedule List */}
-            <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-gray-500" /> Surgical Timetable
-                    </h3>
+            {/* Schedule Table */}
+            <div className="card">
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3><Calendar size={20} className="text-secondary" /> Daily Surgical Timetable</h3>
+                    <div className="status-badge" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-secondary)' }}>
+                        {selectedDate}
+                    </div>
                 </div>
-                <div className="divide-y divide-gray-200">
-                    {schedule.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 border-dashed border-2 m-4 rounded-xl border-gray-200 bg-gray-50">
-                            No surgeries scheduled for this date.
-                        </div>
-                    ) : schedule.map(surg => (
-                        <div key={surg.id} className="p-6 flex flex-col md:flex-row gap-6 items-start md:items-center hover:bg-gray-50 transition-colors">
-                            {/* Time Column */}
-                            <div className="w-32 flex-shrink-0 text-center border-r border-gray-200 pr-6">
-                                <div className="text-xl font-bold text-slate-900">{formatTime(surg.scheduledStartTime)}</div>
-                                <div className="text-xs font-medium text-slate-500 flex items-center justify-center gap-1 mt-1">
-                                    <Clock className="w-3 h-3" /> {formatTime(surg.scheduledEndTime)}
-                                </div>
-                            </div>
-
-                            {/* Details Column */}
-                            <div className="flex-1 space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <h4 className="text-lg font-bold text-gray-900">{surg.procedureName}</h4>
-                                    <span className="bg-rose-100 text-rose-700 text-xs font-bold px-2.5 py-0.5 rounded uppercase tracking-wider">
-                                        {surg.theatreName}
-                                    </span>
-                                </div>
-                                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
-                                    <span className="flex items-center gap-1.5"><strong className="text-gray-900">Patient:</strong> {surg.patientName}</span>
-                                    <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-gray-400" /> <strong className="text-gray-900">Surgeon:</strong> Dr. {surg.primarySurgeonName}</span>
-                                    {surg.anesthetistName && (
-                                        <span className="flex items-center gap-1.5"><strong className="text-gray-900">Anesthetist:</strong> Dr. {surg.anesthetistName}</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Actions & Status Column */}
-                            <div className="flex flex-col items-end gap-3 md:w-48 flex-shrink-0">
-                                <select
-                                    className={`text-sm font-semibold rounded-md border-0 py-1.5 pl-3 pr-8 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-xs sm:leading-6
-                                        ${surg.status === 'SCHEDULED' ? 'bg-amber-50 text-amber-900 ring-amber-300 focus:ring-amber-600' :
-                                            surg.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-900 ring-blue-300 focus:ring-blue-600' :
-                                                surg.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-900 ring-emerald-300 focus:ring-emerald-600' :
-                                                    'bg-gray-50 text-gray-900 ring-gray-300'}`}
-                                    value={surg.status}
-                                    onChange={(e) => handleUpdateStatus(surg.id, e.target.value as SurgeryStatus)}
-                                >
-                                    <option value="SCHEDULED">Scheduled</option>
-                                    <option value="IN_PROGRESS">In OT (In Progress)</option>
-                                    <option value="COMPLETED">Completed</option>
-                                    <option value="CANCELLED">Cancelled</option>
-                                </select>
-
-                                {surg.status === 'COMPLETED' && (
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => { setActiveSurgeryContext(surg); setSurgicalNoteModalOpen(true); }}
-                                            className="p-1.5 rounded-md bg-white border border-gray-300 text-gray-600 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors"
-                                            title="Add Surgical Note"
+                
+                <div className="data-table-container">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>Schedule</th>
+                                <th>Unit & Procedure</th>
+                                <th>Patient/Surgeon</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-tertiary)' }}>
+                                        Loading schedule...
+                                    </td>
+                                </tr>
+                            ) : schedule.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-tertiary)' }}>
+                                        <div style={{ marginBottom: '1rem' }}><AlertCircle size={32} style={{ margin: '0 auto' }} /></div>
+                                        No surgeries scheduled for this date.
+                                    </td>
+                                </tr>
+                            ) : schedule.map(surg => (
+                                <tr key={surg.id}>
+                                    <td>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{formatTime(surg.scheduledStartTime)}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                <Clock size={12} /> {formatTime(surg.scheduledEndTime)}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                            <span className="status-badge-sm" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)', alignSelf: 'start' }}>
+                                                {surg.theatreName}
+                                            </span>
+                                            <span style={{ fontWeight: 600 }}>{surg.procedureName}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontWeight: 600 }}>{surg.patientName}</span>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sr. Dr. {surg.primarySurgeonName}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select
+                                            className="btn-secondary"
+                                            style={{ 
+                                                fontSize: '0.75rem', 
+                                                padding: '0.25rem 0.5rem',
+                                                borderColor: surg.status === 'IN_PROGRESS' ? 'var(--primary)' : 'var(--border)',
+                                                backgroundColor: surg.status === 'IN_PROGRESS' ? 'var(--primary-light)' : 'white'
+                                            }}
+                                            value={surg.status}
+                                            onChange={(e) => handleUpdateStatus(surg.id, e.target.value as SurgeryStatus)}
                                         >
-                                            <Stethoscope className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => { setActiveSurgeryContext(surg); setAnesthesiaNoteModalOpen(true); }}
-                                            className="p-1.5 rounded-md bg-white border border-gray-300 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
-                                            title="Add Anesthesia Note"
-                                        >
-                                            <Syringe className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                                            <option value="SCHEDULED">Scheduled</option>
+                                            <option value="IN_PROGRESS">In OT</option>
+                                            <option value="COMPLETED">Completed</option>
+                                            <option value="CANCELLED">Cancelled</option>
+                                        </select>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                            {surg.status === 'COMPLETED' && (
+                                                <>
+                                                    <button 
+                                                        className="btn-secondaryIcon" 
+                                                        title="Surgical Note"
+                                                        onClick={() => { setActiveSurgeryContext(surg); setSurgicalNoteModalOpen(true); }}
+                                                    >
+                                                        <Stethoscope size={16} />
+                                                    </button>
+                                                    <button 
+                                                        className="btn-secondaryIcon" 
+                                                        title="Anesthesia Note"
+                                                        onClick={() => { setActiveSurgeryContext(surg); setAnesthesiaNoteModalOpen(true); }}
+                                                    >
+                                                        <Syringe size={16} />
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button className="btn-secondaryIcon text-danger"><Trash2 size={16} /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            {/* Surgical Note Modal */}
-            {isSurgicalNoteModalOpen && activeSurgeryContext && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Stethoscope className="text-rose-600" /> Operative Report</h3>
-                            <button onClick={() => setSurgicalNoteModalOpen(false)} className="text-gray-400 hover:text-gray-600"><CheckCircle className="rotate-45" /></button>
+            {/* Surgical Note Modal placeholder (styled in common modal classes if available, otherwise using inline) */}
+            {isSurgicalNoteModalOpen && (
+                <div style={{ 
+                    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div className="card" style={{ width: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div className="panel-header">
+                            <h3 style={{ gap: '0.75rem' }}><Stethoscope size={20} className="text-danger" /> Surgical Operative Report</h3>
                         </div>
-                        <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                            <div className="text-sm bg-blue-50 text-blue-800 p-3 rounded-md mb-4 border border-blue-100">
-                                <strong>Patient:</strong> {activeSurgeryContext.patientName} | <strong>Procedure:</strong> {activeSurgeryContext.procedureName}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Pre-Operative Diagnosis</label>
-                                    <input type="text" value={preOpDiag} onChange={e => setPreOpDiag(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-rose-500 focus:border-rose-500 shadow-sm sm:text-sm" />
+                        <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Pre-Op Diagnosis</label>
+                                    <input type="text" className="form-control" value={preOpDiag} onChange={e => setPreOpDiag(e.target.value)} />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Post-Operative Diagnosis</label>
-                                    <input type="text" value={postOpDiag} onChange={e => setPostOpDiag(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-rose-500 focus:border-rose-500 shadow-sm sm:text-sm" />
+                                <div className="form-group">
+                                    <label>Post-Op Diagnosis</label>
+                                    <input type="text" className="form-control" value={postOpDiag} onChange={e => setPostOpDiag(e.target.value)} />
                                 </div>
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Details of Operation Performed <span className="text-red-500">*</span></label>
-                                <textarea required rows={4} value={operationPerformed} onChange={e => setOperationPerformed(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-rose-500 focus:border-rose-500 shadow-sm sm:text-sm" placeholder="Detailed narrative of the procedure..."></textarea>
+                            <div className="form-group">
+                                <label>Operation Performed</label>
+                                <textarea rows={4} className="form-control" value={operationPerformed} onChange={e => setOperationPerformed(e.target.value)} />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Surgeon's Notes/Findings</label>
-                                <textarea rows={2} value={surgeonNotes} onChange={e => setSurgeonNotes(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-rose-500 focus:border-rose-500 shadow-sm sm:text-sm"></textarea>
+                            <div className="form-group">
+                                <label>Surgeon Notes</label>
+                                <textarea rows={3} className="form-control" value={surgeonNotes} onChange={e => setSurgeonNotes(e.target.value)} />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Complications</label>
-                                <input type="text" value={complications} onChange={e => setComplications(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-rose-500 focus:border-rose-500 shadow-sm sm:text-sm" />
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                                <button className="btn-secondary" onClick={() => setSurgicalNoteModalOpen(false)}>Cancel</button>
+                                <button className="btn-primary" onClick={submitSurgicalNote}>Sign & Submit</button>
                             </div>
-                        </div>
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
-                            <button onClick={() => setSurgicalNoteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
-                            <button onClick={submitSurgicalNote} className="px-4 py-2 text-sm font-medium text-white bg-rose-600 border border-transparent rounded-md shadow-sm hover:bg-rose-700">Sign & Save Note</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Anesthesia Note Modal */}
-            {isAnesthesiaNoteModalOpen && activeSurgeryContext && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Syringe className="text-indigo-600" /> Anesthesia Record</h3>
-                            <button onClick={() => setAnesthesiaNoteModalOpen(false)} className="text-gray-400 hover:text-gray-600"><CheckCircle className="rotate-45" /></button>
+            {/* Anesthesia Note Modal placeholder */}
+            {isAnesthesiaNoteModalOpen && (
+                <div style={{ 
+                    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div className="card" style={{ width: '500px' }}>
+                        <div className="panel-header">
+                            <h3 style={{ gap: '0.75rem' }}><Syringe size={20} className="text-secondary" /> Anesthesia Record</h3>
                         </div>
-                        <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Anesthesia Type</label>
-                                <select value={anesType} onChange={e => setAnesType(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm sm:text-sm">
+                        <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div className="form-group">
+                                <label>Anesthesia Type</label>
+                                <select className="form-control" value={anesType} onChange={e => setAnesType(e.target.value)}>
                                     <option>General</option>
-                                    <option>Regional (Epidural/Spinal)</option>
                                     <option>Local with MAC</option>
-                                    <option>Local Only</option>
+                                    <option>Regional</option>
                                 </select>
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Medications Administered</label>
-                                <textarea rows={2} value={medsAdmin} onChange={e => setMedsAdmin(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm sm:text-sm" placeholder="Propofol, Fentanyl, Rocuronium..."></textarea>
+                            <div className="form-group">
+                                <label>Medications</label>
+                                <textarea rows={2} className="form-control" value={medsAdmin} onChange={e => setMedsAdmin(e.target.value)} />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Patient Vitals Summary</label>
-                                <textarea rows={2} value={patientVitals} onChange={e => setPatientVitals(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm sm:text-sm" placeholder="BP maintained 110/70, HR 60-80, SpO2 99%"></textarea>
+                            <div className="form-group">
+                                <label>Patient Vitals Summary</label>
+                                <textarea rows={2} className="form-control" value={patientVitals} onChange={e => setPatientVitals(e.target.value)} />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Anesthetist Notes</label>
-                                <textarea rows={3} value={anesNotes} onChange={e => setAnesNotes(e.target.value)} className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm sm:text-sm" placeholder="Intubation grade I, smooth extubation..."></textarea>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                                <button className="btn-secondary" onClick={() => setAnesthesiaNoteModalOpen(false)}>Cancel</button>
+                                <button className="btn-primary" onClick={submitAnesthesiaNote}>Confirm Record</button>
                             </div>
-                        </div>
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
-                            <button onClick={() => setAnesthesiaNoteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
-                            <button onClick={submitAnesthesiaNote} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700">Sign & Save Record</button>
                         </div>
                     </div>
                 </div>

@@ -18,11 +18,13 @@ import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import Patients from './pages/doctor/Patients';
 import PatientEMR from './pages/doctor/PatientEMR';
 import IPDDashboard from './pages/doctor/IPDDashboard';
+import DoctorSchedule from './pages/doctor/DoctorSchedule';
 
 import ReceptionistLayout from './components/receptionist/ReceptionistLayout';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard';
 import WardManagement from './pages/receptionist/WardManagement';
 import BillingDashboard from './pages/receptionist/BillingDashboard';
+import ICUAvailability from './pages/receptionist/ICUAvailability';
 
 import NurseLayout from './components/nurse/NurseLayout';
 import NurseDashboard from './pages/nurse/NurseDashboard';
@@ -74,6 +76,7 @@ function App() {
           <Route path="patients" element={<Patients />} />
           <Route path="patient/:id/emr" element={<PatientEMR />} />
           <Route path="ipd" element={<IPDDashboard />} />
+          <Route path="schedule" element={<DoctorSchedule />} />
           <Route path="ot-schedule" element={<OTDashboard />} />
           <Route path="appointments" element={<div style={{ padding: '2rem' }}><h2>Appointments Coming Soon</h2></div>} />
         </Route>
@@ -84,7 +87,9 @@ function App() {
           <Route path="appointments" element={<div style={{ padding: '2rem' }}><h2>Appointments Coming Soon</h2></div>} />
           <Route path="billing" element={<BillingDashboard />} />
           <Route path="wards" element={<WardManagement />} />
+          <Route path="icu" element={<ICUAvailability />} />
           <Route path="ot-schedule" element={<OTDashboard />} />
+          <Route path="ot" element={<Navigate to="/receptionist/ot-schedule" replace />} />
         </Route>
 
         <Route path="/nurse" element={<NurseLayout />}>

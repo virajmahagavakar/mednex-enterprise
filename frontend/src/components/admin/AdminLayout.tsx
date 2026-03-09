@@ -80,12 +80,15 @@ const AdminLayout = () => {
   };
 
   const navItems = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, roles: ['Hospital Admin', 'Branch Admin'] },
-    { name: 'Branches', path: '/admin/branches', icon: <Building2 size={20} />, roles: ['Hospital Admin'] },
-    { name: 'Staff & Roles', path: '/admin/staff', icon: <Users size={20} />, roles: ['Hospital Admin', 'Branch Admin'] },
-    { name: 'Subscription', path: '/admin/subscription', icon: <CreditCard size={20} />, roles: ['Hospital Admin', 'Branch Admin'] },
-    { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} />, roles: ['Hospital Admin'] },
-  ].filter(item => item.roles.includes(userRole));
+    { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, roles: ['Hospital Admin', 'Branch Admin', 'Admin'] },
+    { name: 'Branches', path: '/admin/branches', icon: <Building2 size={20} />, roles: ['Hospital Admin', 'Admin'] },
+    { name: 'Staff & Roles', path: '/admin/staff', icon: <Users size={20} />, roles: ['Hospital Admin', 'Branch Admin', 'Admin'] },
+    { name: 'Subscription', path: '/admin/subscription', icon: <CreditCard size={20} />, roles: ['Hospital Admin', 'Branch Admin', 'Admin'] },
+    { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} />, roles: ['Hospital Admin', 'Admin'] },
+  ].filter(item => {
+    // Case insensitive/Contains check to be safer
+    return item.roles.some(r => userRole.includes(r) || r.includes(userRole));
+  });
 
   return (
     <div className="admin-layout">

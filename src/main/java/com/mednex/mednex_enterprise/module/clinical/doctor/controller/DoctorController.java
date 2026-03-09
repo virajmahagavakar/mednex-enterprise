@@ -68,7 +68,7 @@ public class DoctorController {
                         .lastName(p.getLastName())
                         .email(p.getEmail())
                         .phone(p.getPhone())
-                        .dateOfBirth(p.getDateOfBirth())
+                        .dateOfBirth(p.getDateOfBirth() != null ? LocalDate.parse(p.getDateOfBirth()) : null)
                         .gender(p.getGender())
                         .bloodGroup(p.getBloodGroup())
                         .medicalHistory(p.getMedicalHistory())
