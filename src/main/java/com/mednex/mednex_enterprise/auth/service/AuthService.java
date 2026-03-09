@@ -105,6 +105,7 @@ public class AuthService {
                     .map(role -> role.getName())
                     .collect(Collectors.toList());
             extraClaims.put("roles", roleNames);
+            extraClaims.put("name", user.getName());
 
             // Adding granular permissions to JWT
             List<String> permissions = user.getRoles().stream()
@@ -133,6 +134,8 @@ public class AuthService {
                     .token(jwtToken)
                     .refreshToken(refreshToken)
                     .hospitalId(tenant.getTenantId())
+                    .name(user.getName())
+                    .email(user.getEmail())
                     .build();
 
         } finally {
@@ -160,6 +163,7 @@ public class AuthService {
                                 .map(role -> role.getName())
                                 .collect(Collectors.toList());
                         extraClaims.put("roles", roleNames);
+                        extraClaims.put("name", user.getName());
 
                         List<String> permissions = user.getRoles().stream()
                                 .flatMap(role -> role.getPermissions().stream())

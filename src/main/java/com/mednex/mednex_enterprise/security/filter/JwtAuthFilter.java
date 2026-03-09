@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,6 +18,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -68,10 +72,38 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    // Extract roles and permissions from JWT
+                    List<String> roles = jwtService.extractRoles(jwt);
+                    List<String> permissions = jwtService.extractPermissions(jwt);
+
+                    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+                    // Process Roles - ensure ROLE_ prefix
+                    if (roles != null) {
+                        roles.stream()
+                                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                                .map(SimpleGrantedAuthority::new)
+                                .forEach(authorities::add);
+                    }
+
+                    // Process Permissions
+                    if (permissions != null) {
+                        permissions.stream()
+                                .map(SimpleGrantedAuthority::new)
+                                .forEach(authorities::add);
+                    }
+
+                    // Fallback to DB authorities if token is empty (legacy support)
+                    if (authorities.isEmpty()) {
+                        authorities.addAll(userDetails.getAuthorities().stream()
+                                .map(auth -> (SimpleGrantedAuthority) auth)
+                                .collect(Collectors.toList()));
+                    }
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
-                            userDetails.getAuthorities());
+                            authorities);
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);

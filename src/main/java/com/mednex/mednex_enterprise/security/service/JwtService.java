@@ -88,5 +88,15 @@ public class JwtService {
     public String extractTenantId(String token) {
         return extractClaim(token, claims -> claims.get("hospital_id", String.class));
     }
+
+    @SuppressWarnings("unchecked")
+    public List<String> extractRoles(String token) {
+        return extractClaim(token, claims -> (List<String>) claims.get("roles"));
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<String> extractPermissions(String token) {
+        return extractClaim(token, claims -> (List<String>) claims.get("permissions"));
+    }
 }
 

@@ -13,4 +13,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT u FROM User u JOIN u.roles r WHERE u.primaryBranch.id = :branchId AND r.name IN ('ROLE_BRANCH_ADMIN', 'BRANCH_ADMIN')")
     List<User> findBranchAdminsByBranchId(@Param("branchId") UUID branchId);
+
+    List<User> findAllByRolesName(String roleName);
 }

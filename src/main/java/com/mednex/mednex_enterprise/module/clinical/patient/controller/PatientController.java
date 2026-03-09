@@ -18,7 +18,7 @@ import com.mednex.mednex_enterprise.module.clinical.patient.dto.PatientProfileDT
 import com.mednex.mednex_enterprise.module.clinical.patient.dto.PatientProfileUpdateDTO;
 
 @RestController
-@RequestMapping("/api/clinical/patient-portal")
+@RequestMapping("/api/v1/clinical/patient-portal")
 @RequiredArgsConstructor
 public class PatientController {
 

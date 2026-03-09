@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/roles")
+@RequestMapping("/api/v1/admin/roles")
 @RequiredArgsConstructor
 public class RoleController {
 
     private final RoleService roleService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('HOSPITAL_ADMIN') or hasAuthority('BRANCH_ADMIN') or hasAuthority('ROLE_HOSPITAL_ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'BRANCH_ADMIN')")
     public ResponseEntity<List<RoleResponse>> getAllRoles() {
         return ResponseEntity.ok(roleService.getAllRoles());
     }

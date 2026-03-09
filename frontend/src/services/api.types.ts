@@ -296,12 +296,22 @@ export interface AvailableSlotDTO {
 }
 
 export interface AppointmentBookingRequest {
+<<<<<<< HEAD
     doctorId?: string; // Optional doctor preference
     appointmentTime?: string; // Optional preferred time
     reasonForVisit: string;
     problemDescription: string;
     symptoms: string;
     departmentPreference?: string;
+=======
+    symptoms: string;
+    problemDescription: string;
+    preferredDate?: string; // ISO string
+    urgencyLevel?: 'ROUTINE' | 'URGENT' | 'EMERGENCY' | 'CRITICAL';
+    departmentPreference?: string;
+    doctorId?: string; // Optional
+    appointmentTime?: string; // Optional
+>>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
 }
 
 export interface PatientAppointmentResponseDTO {
@@ -310,7 +320,8 @@ export interface PatientAppointmentResponseDTO {
     doctorName: string;
     specialization: string;
     appointmentTime: string; // ISO DateTime string
-    status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    preferredDate?: string; // ISO DateTime string
+    status: AppointmentStatus;
     reasonForVisit?: string;
     notes?: string;
     prescription?: string;

@@ -110,11 +110,24 @@ const ReceptionistDashboard = () => {
         }
     };
 
+<<<<<<< HEAD
     const formatTime = (time: string) => {
         if (!time) return '';
         return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+=======
+    const formatTime = (time: string | null) => {
+        if (!time) return 'Slot Not Assigned';
+        return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatDate = (time: string | null) => {
+        if (!time) return 'TBD';
+        return new Date(time).toLocaleDateString();
+    };
+
+>>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
     const filteredToday = todayAppointments.filter(apt => 
         apt.patient.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         apt.doctor.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -209,7 +222,11 @@ const ReceptionistDashboard = () => {
                                                     <div className="patient-name">{apt.patient.user.name}</div>
                                                     <div className="appointment-source">{apt.isWalkIn ? 'Walk-in' : 'Booked Online'}</div>
                                                 </td>
+<<<<<<< HEAD
                                                 <td>{apt.doctor.name}</td>
+=======
+                                                <td>{apt.doctor?.name || <span className="text-muted">Unassigned</span>}</td>
+>>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                                                 <td><span className="token-badge">{apt.tokenNumber || '-'}</span></td>
                                                 <td>
                                                     <span className={`status-badge-sm status-${apt.status.toLowerCase()}`}>
@@ -253,6 +270,7 @@ const ReceptionistDashboard = () => {
                                             <div className="request-patient">
                                                 <div className="patient-name">{req.patient.user.name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+<<<<<<< HEAD
                                                     wants to see <strong>{req.doctor.name}</strong>
                                                 </div>
                                             </div>
@@ -260,6 +278,19 @@ const ReceptionistDashboard = () => {
                                                 <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>{formatTime(req.appointmentTime)}</div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                                                     {new Date(req.appointmentTime).toLocaleDateString()}
+=======
+                                                    {req.doctor ? (
+                                                        <>wants to see <strong>{req.doctor.name}</strong></>
+                                                    ) : (
+                                                        <>Requires Triage & Assignment</>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>{formatTime(req.appointmentTime || req.preferredDate)}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                                                    {formatDate(req.appointmentTime || req.preferredDate)}
+>>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                                                 </div>
                                             </div>
                                         </div>

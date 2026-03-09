@@ -19,6 +19,7 @@ public class PatientAppointmentResponseDTO {
     private String doctorName;
     private String specialization;
     private LocalDateTime appointmentTime;
+    private LocalDateTime preferredDate;
     private AppointmentStatus status;
     private String reasonForVisit;
     private String notes;

@@ -10,6 +10,8 @@ import com.mednex.mednex_enterprise.module.clinical.ipd.repository.WardRepositor
 import com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient;
 import com.mednex.mednex_enterprise.module.clinical.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +24,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class IpdService {
 
+    private static final Logger log = LoggerFactory.getLogger(IpdService.class);
+
     private final WardRepository wardRepository;
     private final BedRepository bedRepository;
     private final AdmissionRepository admissionRepository;
     private final DailyRoundRepository dailyRoundRepository;
     private final PatientRepository patientRepository;
 
+    @Transactional(readOnly = true)
     public List<WardDTO> getWardsByBranch(UUID branchId) {
+        log.info("Fetching wards for branch {}", branchId);
         return wardRepository.findByBranchId(branchId).stream().map(ward -> {
             long occupied = bedRepository.countByWardIdAndStatus(ward.getId(), BedStatus.OCCUPIED);
             long available = bedRepository.countByWardIdAndStatus(ward.getId(), BedStatus.AVAILABLE);
@@ -44,7 +50,9 @@ public class IpdService {
         }).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<BedDTO> getBedsByWard(UUID wardId) {
+        log.info("Fetching beds for ward {}", wardId);
         return bedRepository.findByWardId(wardId).stream().map(bed -> BedDTO.builder()
                 .id(bed.getId())
                 .wardId(bed.getWard().getId())
@@ -141,17 +149,23 @@ public class IpdService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public List<AdmissionDTO> getAdmissionsByDoctor(UUID doctorId) {
+        log.info("Fetching admissions for doctor {}", doctorId);
         return admissionRepository.findByAdmittingDoctorIdAndStatus(doctorId, AdmissionStatus.ADMITTED)
                 .stream().map(this::mapToAdmissionDTO).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<AdmissionDTO> getAdmissionsByPatient(UUID patientId) {
+        log.info("Fetching admissions history for patient {}", patientId);
         return admissionRepository.findByPatientIdOrderByAdmissionDateDesc(patientId)
                 .stream().map(this::mapToAdmissionDTO).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<DailyRoundDTO> getDailyRounds(UUID admissionId) {
+        log.info("Fetching daily rounds for admission {}", admissionId);
         return dailyRoundRepository.findByAdmissionIdOrderByRoundDateAsc(admissionId)
                 .stream().map(round -> DailyRoundDTO.builder()
                         .id(round.getId())

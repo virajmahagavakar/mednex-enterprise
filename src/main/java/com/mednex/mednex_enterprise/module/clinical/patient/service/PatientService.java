@@ -143,6 +143,10 @@ public class PatientService {
                         .doctorName(app.getDoctor() != null ? app.getDoctor().getName() : "Unknown")
                         .specialization(staffProfile != null ? staffProfile.getSpecialization() : "Medical Professional")
                         .appointmentTime(app.getAppointmentTime())
+<<<<<<< HEAD
+=======
+                        .preferredDate(app.getPreferredDate())
+>>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                         .status(app.getStatus())
                         .reasonForVisit(app.getReasonForVisit())
                         .notes(app.getNotes())

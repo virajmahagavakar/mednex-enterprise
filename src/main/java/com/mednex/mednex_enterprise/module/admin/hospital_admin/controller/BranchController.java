@@ -13,27 +13,27 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/branches")
+@RequestMapping("/api/v1/admin/branches")
 @RequiredArgsConstructor
 public class BranchController {
 
     private final BranchService branchService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('HOSPITAL_ADMIN')")
+    @PreAuthorize("hasRole('HOSPITAL_ADMIN')")
     public ResponseEntity<BranchResponse> createBranch(@Valid @RequestBody BranchRequest request) {
         BranchResponse response = branchService.createBranch(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('HOSPITAL_ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'DOCTOR')")
     public ResponseEntity<List<BranchResponse>> getAllBranches() {
         return ResponseEntity.ok(branchService.getAllBranches());
     }
 
     @DeleteMapping("/{branchId}/admin")
-    @PreAuthorize("hasAuthority('HOSPITAL_ADMIN')")
+    @PreAuthorize("hasRole('HOSPITAL_ADMIN')")
     public ResponseEntity<Void> removeBranchAdmin(@PathVariable java.util.UUID branchId) {
         branchService.removeBranchAdmin(branchId);
         return ResponseEntity.noContent().build();

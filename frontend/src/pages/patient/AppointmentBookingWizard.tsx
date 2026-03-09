@@ -109,9 +109,15 @@ export default function AppointmentBookingWizard() {
 
             const payload: AppointmentBookingRequest = {
                 departmentPreference: selectedSpec,
+<<<<<<< HEAD
                 reasonForVisit: reason || symptoms.substring(0, 50),
                 problemDescription: problemDescription,
                 symptoms: symptoms,
+=======
+                problemDescription: problemDescription,
+                symptoms: symptoms,
+                preferredDate: selectedDate || undefined,
+>>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                 doctorId: selectedDoctor?.id,
                 appointmentTime: selectedSlot?.time
             };
