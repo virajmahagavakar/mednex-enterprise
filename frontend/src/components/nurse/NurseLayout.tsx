@@ -4,7 +4,8 @@ import {
     LogOut,
     LayoutDashboard,
     Menu,
-    UserCircle
+    UserCircle,
+    Activity
 } from 'lucide-react';
 import { AuthService } from '../../services/auth.service';
 import { TokenService } from '../../services/api.client';
@@ -15,12 +16,15 @@ interface JWTPayload {
     sub: string;
     roles?: string[];
     hospital_id?: string;
+    name?: string;
+    email?: string;
     exp: number;
 }
 
 const NurseLayout = () => {
     const navigate = useNavigate();
-    const [userEmail, setUserEmail] = useState<string>('Nurse User');
+    const [userName, setUserName] = useState<string>('Nurse User');
+    const [userEmail, setUserEmail] = useState<string>('');
     const [userRole, setUserRole] = useState<string>('Nurse');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -32,7 +36,8 @@ const NurseLayout = () => {
         } else {
             try {
                 const decoded = jwtDecode<JWTPayload>(token);
-                setUserEmail(decoded.sub || 'Nurse User');
+                setUserName(decoded.name || decoded.sub || 'Nurse User');
+                setUserEmail(decoded.email || decoded.sub || '');
                 let roleDisplay = 'Nurse';
                 if (decoded.roles && decoded.roles.length > 0) {
                     roleDisplay = decoded.roles[0]
@@ -60,6 +65,7 @@ const NurseLayout = () => {
 
     const navItems = [
         { name: 'Dashboard', path: '/nurse/dashboard', icon: <LayoutDashboard size={20} /> },
+        { name: 'IPD Station', path: '/nurse/ipd', icon: <Activity size={20} /> },
     ];
 
     return (
@@ -103,9 +109,9 @@ const NurseLayout = () => {
                     <div className="header-right">
                         <div className="user-profile-container">
                             <div className="user-profile" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                                <div className="avatar">{userEmail.charAt(0).toUpperCase()}</div>
+                                <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
                                 <div className="user-info">
-                                    <span className="user-name">{userEmail}</span>
+                                    <span className="user-name">{userName}</span>
                                     <span className="user-role">{userRole}</span>
                                 </div>
                             </div>
@@ -113,7 +119,7 @@ const NurseLayout = () => {
                             {isDropdownOpen && (
                                 <div className="profile-dropdown">
                                     <div className="dropdown-header">
-                                        <p className="dropdown-name">{userEmail}</p>
+                                        <p className="dropdown-name">{userName}</p>
                                         <p className="dropdown-role">{userRole}</p>
                                     </div>
                                     <div className="dropdown-divider"></div>
@@ -139,10 +145,11 @@ const NurseLayout = () => {
             <ProfileModal
                 isOpen={isProfileModalOpen}
                 onClose={() => setIsProfileModalOpen(false)}
+                userName={userName}
                 userEmail={userEmail}
                 userRole={userRole}
                 onProfileUpdated={(name) => {
-                    setUserEmail(name);
+                    setUserName(name);
                 }}
             />
 

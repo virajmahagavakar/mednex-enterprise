@@ -67,6 +67,7 @@ export interface ProfileResponse {
     contactNumber: string;
     roles: string[];
     active: boolean;
+    branch?: BranchResponse;
 }
 
 export interface ProfileRequest {
@@ -136,8 +137,15 @@ export interface DoctorDashboardStatsDTO {
     totalPatients: number;
     todayAppointments: number;
     waitingQueueCount: number;
-    checkedInToday: number;
     completedToday: number;
+    activeIpdPatients: number;
+    nextAppointmentTime: string;
+    pendingPrescriptions: number;
+}
+
+export interface DashboardChartDataDTO {
+    date: string;
+    patientsSeen: number;
 }
 
 export interface DoctorScheduleDTO {
@@ -149,7 +157,7 @@ export interface DoctorScheduleDTO {
     active: boolean;
 }
 
-export type AppointmentStatus = 'REQUESTED' | 'PENDING' | 'CONFIRMED' | 'SCHEDULED' | 'CHECKED_IN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED';
+export type AppointmentStatus = 'REQUESTED' | 'TRIAGED' | 'PENDING' | 'CONFIRMED' | 'SCHEDULED' | 'CHECKED_IN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED' | 'DENIED' | 'TRANSFERRED';
 
 export interface AppointmentResponse {
     id: string; // UUID
@@ -163,18 +171,20 @@ export interface AppointmentResponse {
     isWalkIn?: boolean;
 }
 
+export interface PatientResponseDTO {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    gender?: string;
+    bloodGroup?: string;
+}
+
 export interface Appointment {
     id: string;
-    patient: {
-        id: string;
-        user: {
-            name: string;
-        };
-    };
-    doctor: {
-        id: string;
-        name: string;
-    };
+    patient: PatientResponseDTO;
+    doctor: DoctorInfoDTO | null;
     appointmentTime: string;
     status: AppointmentStatus;
     tokenNumber?: number;
@@ -183,15 +193,19 @@ export interface Appointment {
     problemDescription?: string;
     symptoms?: string;
     urgencyLevel: 'ROUTINE' | 'URGENT' | 'EMERGENCY' | 'CRITICAL';
-    departmentPreference?: string;
-    notes?: string;
+    departmentPreference: string | null;
+    preferredDate: string | null;
+    notes: string | null;
+    prescription: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface TriageUpdateRequest {
     doctorId?: string;
     departmentId?: string;
     urgencyLevel?: 'ROUTINE' | 'URGENT' | 'EMERGENCY' | 'CRITICAL';
-    slotTime?: string;
+    appointmentTime?: string;
 }
 
 export interface AppointmentUpdateRequest {
@@ -252,9 +266,32 @@ export interface TriageRequest {
 // Patient Clinical Types
 export interface PatientDashboardStatsDTO {
     upcomingAppointments: number;
-    pendingPrescriptions: number;
+    totalPrescriptions: number;
     recentLabResults: number;
     unreadMessages: number;
+    nextAppointmentDate: string | null;
+}
+
+// Ambulance Types
+export type AmbulanceStatus = 'PENDING' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED';
+
+export interface AmbulanceRequest {
+    address: String;
+    emergencyType: String;
+    phoneNumber: String;
+}
+
+export interface AmbulanceResponse {
+    id: string;
+    patientId: string;
+    patientName: string;
+    address: string;
+    emergencyType: string;
+    phoneNumber: string;
+    requestedAt: string;
+    status: AmbulanceStatus;
+    dispatchedAt?: string;
+    completedAt?: string;
 }
 
 export interface PatientProfileDTO {
@@ -296,14 +333,6 @@ export interface AvailableSlotDTO {
 }
 
 export interface AppointmentBookingRequest {
-<<<<<<< HEAD
-    doctorId?: string; // Optional doctor preference
-    appointmentTime?: string; // Optional preferred time
-    reasonForVisit: string;
-    problemDescription: string;
-    symptoms: string;
-    departmentPreference?: string;
-=======
     symptoms: string;
     problemDescription: string;
     preferredDate?: string; // ISO string
@@ -311,17 +340,17 @@ export interface AppointmentBookingRequest {
     departmentPreference?: string;
     doctorId?: string; // Optional
     appointmentTime?: string; // Optional
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
 }
 
 export interface PatientAppointmentResponseDTO {
     id: string; // UUID
-    doctorId: string;
-    doctorName: string;
-    specialization: string;
+    doctorId?: string;
+    doctorName?: string;
+    specialization?: string;
     appointmentTime: string; // ISO DateTime string
     preferredDate?: string; // ISO DateTime string
     status: AppointmentStatus;
+    tokenNumber?: number;
     reasonForVisit?: string;
     notes?: string;
     prescription?: string;
@@ -445,7 +474,7 @@ export interface WardDTO {
     createdAt: string; // ISO DateTime
 }
 
-export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING_REQUIRED' | 'MAINTENANCE';
 
 export interface BedDTO {
     id: string; // UUID
@@ -453,9 +482,20 @@ export interface BedDTO {
     roomNumber: string;
     bedNumber: string;
     status: BedStatus;
+    bedType?: string;
+    patient?: {
+        name: string;
+        diagnosis?: string;
+        doctorName?: string;
+        admissionDate: string;
+    };
+    attachedAssets?: {
+        id: string;
+        name: string;
+    }[];
 }
 
-export type AdmissionStatus = 'ADMITTED' | 'DISCHARGED';
+export type AdmissionStatus = 'REQUESTED' | 'BED_ASSIGNED' | 'ADMITTED' | 'UNDER_TREATMENT' | 'TRANSFERRED' | 'DISCHARGE_REQUESTED' | 'DISCHARGED';
 
 export interface AdmissionDTO {
     id: string; // UUID
@@ -470,6 +510,24 @@ export interface AdmissionDTO {
     dischargeDate?: string; // ISO DateTime
     status: AdmissionStatus;
     reasonForAdmission: string;
+    urgencyLevel?: string;
+    department?: string;
+}
+
+export interface AdmissionRequestDTO {
+    patientId: string;
+    reasonForAdmission: string;
+    urgencyLevel: string;
+    department: string;
+}
+
+export interface AssignBedRequest {
+    bedId: string;
+    reasonForAdmission?: string;
+}
+
+export interface TransferRequest {
+    newBedId: string;
 }
 
 export interface AdmissionRequest {
@@ -485,10 +543,57 @@ export interface DailyRoundDTO {
     doctorName: string;
     roundDate: string; // ISO DateTime
     clinicalNotes: string;
+    temperature?: string;
+    bloodPressure?: string;
+    heartRate?: string;
+    medicationAdjustment?: string;
+    nextStep?: string;
 }
 
 export interface DailyRoundRequest {
     clinicalNotes: string;
+    temperature?: string;
+    bloodPressure?: string;
+    heartRate?: string;
+    medicationAdjustment?: string;
+    nextStep?: string;
+}
+
+export interface EquipmentRequestDTO {
+    id: string;
+    admissionId: string;
+    equipmentType: string;
+    priority: string;
+    status: string;
+    notes?: string;
+    requestedAt: string;
+    providedAt?: string;
+    returnedAt?: string;
+}
+
+export interface EquipmentRequestAction {
+    equipmentType: string;
+    priority: string;
+    notes?: string;
+}
+
+export interface MedicationAdministrationDTO {
+    id: string;
+    admissionId: string;
+    medicineName: string;
+    dosage: string;
+    route: string;
+    administeredById: string;
+    administeredByName: string;
+    administeredAt: string;
+    notes?: string;
+}
+
+export interface MedicationAdministrationRequest {
+    medicineName: string;
+    dosage: string;
+    route?: string;
+    notes?: string;
 }
 
 // Diagnostics Types
@@ -627,6 +732,10 @@ export interface PatientEMRResponse {
 
 export interface PrescriptionResponse {
     id: string; // UUID
+    patientId?: string;
+    patientName?: string;
+    doctorId?: string;
+    doctorName?: string;
     medicineName: string;
     dosage: string;
     frequency: string;
@@ -683,4 +792,54 @@ export interface ClinicalPrescriptionRequest {
     dosage: string;
     frequency: string;
     duration: string;
+}
+
+// Infrastructure & Asset Management Types
+export type RoomType = 'GENERAL' | 'SEMI_PRIVATE' | 'PRIVATE' | 'ICU' | 'THEATRE' | 'EMERGENCY' | 'LAB' | 'RADIOLOGY' | 'CONSULTATION';
+
+export interface RoomDTO {
+    id: string;
+    floorId: string;
+    roomNumber: string;
+    roomType: RoomType;
+    totalBeds: number;
+    active: boolean;
+    beds: BedDTO[];
+}
+
+export interface FloorDTO {
+    id: string;
+    buildingId: string;
+    floorNumber: number;
+    name: string;
+    rooms: RoomDTO[];
+}
+
+export interface BuildingDTO {
+    id: string;
+    branchId: string;
+    name: string;
+    floors: FloorDTO[];
+}
+
+export interface WardMapDTO {
+    wardId: string;
+    wardName: string;
+    wardType: string;
+    rooms: RoomDTO[];
+}
+
+export type AssetType = 'VENTILATOR' | 'MONITOR' | 'INFUSION_PUMP' | 'DEFIBRILLATOR' | 'XRAY_MOBILE' | 'ECG' | 'OTHER';
+export type AssetStatus = 'AVAILABLE' | 'IN_USE' | 'UNDER_MAINTENANCE' | 'DECOMMISSIONED';
+
+export interface MedicalAssetDTO {
+    id: string;
+    name: string;
+    assetType: AssetType;
+    serialNumber: string;
+    manufacturer: string;
+    purchaseDate: string;
+    status: AssetStatus;
+    currentLocationType: 'BED' | 'ROOM' | 'FLOOR' | 'STORAGE';
+    currentLocationId: string;
 }

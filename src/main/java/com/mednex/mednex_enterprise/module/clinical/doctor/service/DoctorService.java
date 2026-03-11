@@ -184,13 +184,9 @@ public class DoctorService {
 
         // Calculate age
         Integer age = null;
-        if (p.getDateOfBirth() != null) {
-            try {
-                LocalDate dob = LocalDate.parse(p.getDateOfBirth());
-                age = java.time.Period.between(dob, LocalDate.now()).getYears();
-            } catch (Exception e) {
-                log.warn("Could not parse DOB for patient {}: {}", p.getId(), p.getDateOfBirth());
-            }
+        LocalDate dob = parseLocalDate(p.getDateOfBirth());
+        if (dob != null) {
+            age = java.time.Period.between(dob, LocalDate.now()).getYears();
         }
 
         return PatientSummaryDTO.builder()
@@ -212,7 +208,7 @@ public class DoctorService {
                 .lastName(p.getLastName())
                 .email(p.getEmail())
                 .phone(p.getPhone())
-                .dateOfBirth(p.getDateOfBirth() != null ? LocalDate.parse(p.getDateOfBirth()) : null)
+                .dateOfBirth(parseLocalDate(p.getDateOfBirth()))
                 .gender(p.getGender())
                 .bloodGroup(p.getBloodGroup())
                 .medicalHistory(p.getMedicalHistory())
@@ -423,5 +419,22 @@ public class DoctorService {
                 .tokenNumber(appointment.getTokenNumber())
                 .isWalkIn(appointment.getIsWalkIn())
                 .build();
+    }
+
+    private LocalDate parseLocalDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String cleanDate = dateStr.trim();
+            // Handle formats like "YYYY-MM-DD +05:30" by taking the first 10 characters
+            if (cleanDate.length() > 10) {
+                cleanDate = cleanDate.substring(0, 10);
+            }
+            return LocalDate.parse(cleanDate);
+        } catch (Exception e) {
+            log.warn("Failed to parse date string: '{}'", dateStr);
+            return null;
+        }
     }
 }

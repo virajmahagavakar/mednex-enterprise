@@ -24,7 +24,15 @@ public class Bed {
     @JoinColumn(name = "ward_id", nullable = false)
     private Ward ward;
 
-    private String roomNumber;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private Room room;
+
+    private Integer coordinatesX;
+    private Integer coordinatesY;
+
+    @Enumerated(EnumType.STRING)
+    private BedType bedType;
 
     @Column(nullable = false)
     private String bedNumber;

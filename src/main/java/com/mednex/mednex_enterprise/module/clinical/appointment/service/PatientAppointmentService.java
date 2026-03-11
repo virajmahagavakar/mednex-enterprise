@@ -35,10 +35,7 @@ public class PatientAppointmentService {
     private final StaffProfileRepository staffProfileRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
-<<<<<<< HEAD
-=======
     private final BranchRepository branchRepository;
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
     private final PatientService patientService;
 
     public List<String> getAvailableSpecializations() {
@@ -98,32 +95,9 @@ public class PatientAppointmentService {
     }
 
     @Transactional
-<<<<<<< HEAD
-    public void bookAppointment(User currentUser, AppointmentBookingRequest request) {
-        Patient patient = patientService.getOrCreatePatient(currentUser);
-
-        User doctor = userRepository.findById(request.getDoctorId())
-                .orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
-
-        // Check if slot is already booked
-        LocalDateTime startOfDay = request.getAppointmentTime().toLocalDate().atTime(0, 0);
-        LocalDateTime endOfDay = request.getAppointmentTime().toLocalDate().atTime(23, 59, 59);
-
-        List<Appointment> existingAppointments = appointmentRepository
-                .findByDoctorIdAndAppointmentTimeBetweenOrderByAppointmentTimeAsc(
-                        doctor.getId(), startOfDay, endOfDay);
-
-        boolean isSlotTaken = existingAppointments.stream()
-                .anyMatch(app -> app.getAppointmentTime().equals(request.getAppointmentTime()) &&
-                        app.getStatus() != AppointmentStatus.CANCELLED);
-
-        if (isSlotTaken) {
-            throw new IllegalStateException("The selected time slot is no longer available.");
-=======
     public void requestAppointment(User currentUser, AppointmentRequestDTO request) {
         if (request == null) {
             throw new IllegalArgumentException("Appointment request cannot be null");
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
         }
 
         Patient patient = patientService.getOrCreatePatient(currentUser);

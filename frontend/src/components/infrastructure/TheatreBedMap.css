@@ -1,0 +1,150 @@
+/* Variables are globally available from index.css */
+
+.theatre-map-container {
+    background: var(--bg-surface);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    min-height: 80vh;
+}
+
+.map-header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.map-legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+/* Status Colors */
+.status-dot.available { background: #10b981; }
+.status-dot.occupied { background: #ef4444; }
+.status-dot.reserved { background: #f59e0b; }
+.status-dot.cleaning { background: #3b82f6; }
+.status-dot.maintenance { background: #6b7280; }
+
+.ward-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.room-card {
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.room-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+}
+
+.room-number {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--primary);
+}
+
+.room-type-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    background: rgba(121, 134, 103, 0.1);
+    color: var(--primary);
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.bed-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.bed-cell {
+    position: relative;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bed-cell:hover {
+    background: var(--bg-main);
+    border-color: var(--primary);
+}
+
+.bed-cell.occupied { border-top: 4px solid #ef4444; }
+.bed-cell.available { border-top: 4px solid #10b981; }
+.bed-cell.reserved { border-top: 4px solid #f59e0b; }
+.bed-cell.cleaning { border-top: 4px solid #3b82f6; }
+
+.bed-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.bed-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.patient-mini-info {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asset-indicators {
+    display: flex;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.asset-icon {
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+}

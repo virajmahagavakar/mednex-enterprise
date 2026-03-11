@@ -19,12 +19,14 @@ interface JWTPayload {
     roles?: string[];
     hospital_id?: string;
     name?: string;
+    email?: string;
     exp: number;
 }
 
 const DoctorLayout = () => {
     const navigate = useNavigate();
     const [userName, setUserName] = useState<string>('Doctor');
+    const [userEmail, setUserEmail] = useState<string>('');
     const [userRole, setUserRole] = useState<string>('Doctor');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -37,6 +39,7 @@ const DoctorLayout = () => {
             try {
                 const decoded = jwtDecode<JWTPayload>(token);
                 setUserName(decoded.name || 'Doctor');
+                setUserEmail(decoded.email || '');
 
                 let roleDisplay = 'Doctor';
                 if (decoded.roles && decoded.roles.length > 0) {
@@ -147,7 +150,8 @@ const DoctorLayout = () => {
             <ProfileModal
                 isOpen={isProfileModalOpen}
                 onClose={() => setIsProfileModalOpen(false)}
-                userEmail={userName}
+                userName={userName}
+                userEmail={userEmail}
                 userRole={userRole}
                 onProfileUpdated={(name) => {
                     setUserName(name);

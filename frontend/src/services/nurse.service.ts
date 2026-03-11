@@ -4,7 +4,13 @@ import type {
     AppointmentResponse,
     TriageRequest,
     WardDTO,
-    BedDTO
+    BedDTO,
+    AdmissionDTO,
+    VitalsRequest,
+    VitalsResponse,
+    MedicationAdministrationDTO,
+    MedicationAdministrationRequest,
+    PrescriptionResponse
 } from './api.types';
 
 const NURSE_API_PREFIX = '/v1/clinical/nurses';
@@ -34,6 +40,36 @@ export const NurseService = {
 
     getBedsByWard: async (wardId: string): Promise<BedDTO[]> => {
         const { data } = await apiClient.get<BedDTO[]>(`${IPD_API_PREFIX}/wards/${wardId}/beds`);
+        return data;
+    },
+
+    getActiveAdmissionsByBranch: async (branchId: string): Promise<AdmissionDTO[]> => {
+        const { data } = await apiClient.get<AdmissionDTO[]>(`${IPD_API_PREFIX}/admissions/active/branch?branchId=${branchId}`);
+        return data;
+    },
+
+    getActiveAdmissionsByWard: async (wardId: string): Promise<AdmissionDTO[]> => {
+        const { data } = await apiClient.get<AdmissionDTO[]>(`${IPD_API_PREFIX}/admissions/active/ward?wardId=${wardId}`);
+        return data;
+    },
+
+    recordVitals: async (admissionId: string, request: VitalsRequest): Promise<VitalsResponse> => {
+        const { data } = await apiClient.post<VitalsResponse>(`${IPD_API_PREFIX}/admissions/${admissionId}/vitals`, request);
+        return data;
+    },
+
+    getActivePrescriptions: async (admissionId: string): Promise<PrescriptionResponse[]> => {
+        const { data } = await apiClient.get<PrescriptionResponse[]>(`${IPD_API_PREFIX}/admissions/${admissionId}/prescriptions`);
+        return data;
+    },
+
+    recordMedicationAdministration: async (admissionId: string, request: MedicationAdministrationRequest): Promise<MedicationAdministrationDTO> => {
+        const { data } = await apiClient.post<MedicationAdministrationDTO>(`${IPD_API_PREFIX}/admissions/${admissionId}/medication`, request);
+        return data;
+    },
+
+    getMedicationHistory: async (admissionId: string): Promise<MedicationAdministrationDTO[]> => {
+        const { data } = await apiClient.get<MedicationAdministrationDTO[]>(`${IPD_API_PREFIX}/admissions/${admissionId}/medication-history`);
         return data;
     }
 };

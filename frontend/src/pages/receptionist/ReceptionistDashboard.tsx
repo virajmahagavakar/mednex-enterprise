@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ReceptionistService } from '../../services/receptionist.service';
-import type { Appointment, DoctorInfoDTO, TriageUpdateRequest } from '../../services/api.types';
+import type { Appointment, DoctorInfoDTO, TriageUpdateRequest, AmbulanceResponse } from '../../services/api.types';
 import { 
     Users, 
     Calendar, 
@@ -9,8 +9,12 @@ import {
     XCircle, 
     UserPlus, 
     Search,
-    Filter,
-    ArrowRight
+    AlertTriangle,
+    Navigation,
+    Phone,
+    MapPin,
+    AlertCircle,
+    CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,6 +23,7 @@ const ReceptionistDashboard = () => {
     const [pendingRequests, setPendingRequests] = useState<Appointment[]>([]);
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
     const [doctors, setDoctors] = useState<DoctorInfoDTO[]>([]);
+    const [ambulanceRequests, setAmbulanceRequests] = useState<AmbulanceResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -27,22 +32,32 @@ const ReceptionistDashboard = () => {
     // Triage Form State
     const [triageDoctorId, setTriageDoctorId] = useState('');
     const [triageUrgency, setTriageUrgency] = useState<'ROUTINE' | 'URGENT' | 'EMERGENCY' | 'CRITICAL'>('ROUTINE');
+    const [triageTime, setTriageTime] = useState('');
+
+    // Cancellation Modal State
+    const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState('');
+    const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchData();
+        const interval = setInterval(fetchAmbulanceOnly, 15000); // Poll for emergencies
+        return () => clearInterval(interval);
     }, []);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [requests, today, doctorList] = await Promise.all([
+            const [requests, today, doctorList, ambulance] = await Promise.all([
                 ReceptionistService.getRequestedAppointments(),
                 ReceptionistService.getTodayAppointments(),
-                ReceptionistService.getDoctors()
+                ReceptionistService.getDoctors(),
+                ReceptionistService.getAmbulanceRequests()
             ]);
             setPendingRequests(requests);
             setTodayAppointments(today);
             setDoctors(doctorList);
+            setAmbulanceRequests(ambulance);
         } catch (error) {
             console.error("Failed to load receptionist data", error);
         } finally {
@@ -50,12 +65,18 @@ const ReceptionistDashboard = () => {
         }
     };
 
+    const fetchAmbulanceOnly = async () => {
+        try {
+            const ambulance = await ReceptionistService.getAmbulanceRequests();
+            setAmbulanceRequests(ambulance);
+        } catch (err) {}
+    };
+
     const handleApprove = async (id: string) => {
         try {
             await ReceptionistService.approveAppointment(id);
-            await fetchData(); // Refresh
+            await fetchData();
         } catch (error) {
-            console.error("Failed to approve appointment", error);
             alert("Failed to approve appointment.");
         }
     };
@@ -63,10 +84,27 @@ const ReceptionistDashboard = () => {
     const handleCheckIn = async (id: string) => {
         try {
             await ReceptionistService.checkInPatient(id);
-            await fetchData(); // Refresh
+            await fetchData();
         } catch (error) {
-            console.error("Failed to check-in patient", error);
             alert("Failed to check-in patient.");
+        }
+    };
+
+    const handleDispatchAmbulance = async (id: string) => {
+        try {
+            await ReceptionistService.dispatchAmbulance(id);
+            await fetchAmbulanceOnly();
+        } catch (err) {
+            alert("Failed to dispatch ambulance.");
+        }
+    };
+
+    const handleCompleteAmbulance = async (id: string) => {
+        try {
+            await ReceptionistService.completeAmbulance(id);
+            await fetchAmbulanceOnly();
+        } catch (err) {
+            alert("Failed to mark ambulance as completed.");
         }
     };
 
@@ -74,123 +112,164 @@ const ReceptionistDashboard = () => {
         setSelectedAppointment(apt);
         setTriageDoctorId(apt.doctor?.id || '');
         setTriageUrgency(apt.urgencyLevel || 'ROUTINE');
+        // Pre-fill with today's date + current time or preferred date
+        const baseDate = apt.preferredDate ? new Date(apt.preferredDate) : new Date();
+        const year = baseDate.getFullYear();
+        const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+        const day = String(baseDate.getDate()).padStart(2, '0');
+        const hours = String(new Date().getHours()).padStart(2, '0');
+        const minutes = String(new Date().getMinutes()).padStart(2, '0');
+        setTriageTime(`${year}-${month}-${day}T${hours}:${minutes}`);
         setIsTriageModalOpen(true);
     };
 
     const handleTriageSubmit = async () => {
-        if (!selectedAppointment) return;
-        if (!triageDoctorId) {
+        if (!selectedAppointment || !triageDoctorId) {
             alert("Please select a doctor.");
             return;
         }
-
         try {
             const update: TriageUpdateRequest = {
                 doctorId: triageDoctorId,
-                urgencyLevel: triageUrgency
+                urgencyLevel: triageUrgency,
+                appointmentTime: triageTime ? new Date(triageTime).toISOString() : undefined
             };
             await ReceptionistService.triageAppointment(selectedAppointment.id, update);
             setIsTriageModalOpen(false);
             await fetchData();
         } catch (error) {
-            console.error("Failed to triage appointment", error);
-            alert("Failed to update triage details.");
+            alert("Failed to update triage details. Please ensure the time slot is available.");
         }
     };
 
-    const handleCancel = async (id: string) => {
-        const reason = prompt("Enter cancellation reason:");
-        if (reason === null) return;
+    const handleCancelClick = (id: string) => {
+        setCancellingAppointmentId(id);
+        setCancellationReason('');
+        setIsCancellationModalOpen(true);
+    };
+
+    const handleCancellationSubmit = async () => {
+        if (!cancellingAppointmentId || !cancellationReason.trim()) {
+            alert("Please enter a cancellation reason.");
+            return;
+        }
         try {
-            await ReceptionistService.cancelAppointment(id, reason);
-            await fetchData(); // Refresh
+            await ReceptionistService.cancelAppointment(cancellingAppointmentId, cancellationReason);
+            setIsCancellationModalOpen(false);
+            setCancellingAppointmentId(null);
+            await fetchData();
         } catch (error) {
-            console.error("Failed to cancel appointment", error);
             alert("Failed to cancel appointment.");
         }
     };
 
-<<<<<<< HEAD
-    const formatTime = (time: string) => {
-        if (!time) return '';
-        return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
-
-=======
-    const formatTime = (time: string | null) => {
+    const formatTime = (time: string | null, isRequested: boolean = false) => {
         if (!time) return 'Slot Not Assigned';
-        return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const date = new Date(time);
+        // If it's 12:00 AM (00:00) and it's a requested appointment, show TBD
+        if (isRequested && date.getHours() === 0 && date.getMinutes() === 0) {
+            return 'Time TBD';
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const formatDate = (time: string | null) => {
-        if (!time) return 'TBD';
-        return new Date(time).toLocaleDateString();
-    };
+    const filteredToday = useMemo(() => todayAppointments.filter(apt => 
+        (apt.patient.firstName + ' ' + apt.patient.lastName).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (apt.doctor?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ), [todayAppointments, searchTerm]);
 
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
-    const filteredToday = todayAppointments.filter(apt => 
-        apt.patient.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.doctor.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const activeAmbulanceRequests = ambulanceRequests.filter(req => req.status !== 'COMPLETED' && req.status !== 'CANCELLED');
 
     return (
-        <div className="page-container">
-            <div className="page-header">
-                <div>
-                    <h2 className="page-title">Reception Desk</h2>
-                    <p className="page-description">Manage patient arrivals and appointment requests</p>
+        <div className="page-container" style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
+            {/* Real-time Emergency Alerts */}
+            {activeAmbulanceRequests.length > 0 && (
+                <div className="emergency-alert-banner" style={{ 
+                    background: '#FEF2F2', 
+                    border: '2px solid #EF4444', 
+                    borderRadius: '1rem', 
+                    padding: '1.5rem', 
+                    marginBottom: '2.5rem',
+                    animation: 'pulse-red 2s infinite ease-in-out'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                        <div style={{ background: '#EF4444', color: 'white', padding: '0.5rem', borderRadius: '50%' }}>
+                            <AlertTriangle size={24} />
+                        </div>
+                        <h2 style={{ color: '#991B1B', fontWeight: 800, fontSize: '1.25rem' }}>ACTIVE EMERGENCY REQUESTS ({activeAmbulanceRequests.length})</h2>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+                        {activeAmbulanceRequests.map(req => (
+                            <div key={req.id} style={{ background: 'white', padding: '1.25rem', borderRadius: '0.75rem', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #FEE2E2' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 700, color: '#1E293B' }}>{req.patientName}</span>
+                                    <span style={{ 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 800, 
+                                        padding: '0.2rem 0.5rem', 
+                                        borderRadius: '4px', 
+                                        background: req.status === 'PENDING' ? '#FEE2E2' : '#DBEAFE',
+                                        color: req.status === 'PENDING' ? '#991B1B' : '#1E40AF'
+                                    }}>{req.status}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', color: '#64748B', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                                    <MapPin size={14} /> <span style={{ flex: 1 }}>{req.address}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', color: '#64748B', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                                    <Phone size={14} /> {req.phoneNumber}
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {req.status === 'PENDING' ? (
+                                        <button onClick={() => handleDispatchAmbulance(req.id)} className="btn-dispatch" style={{ flex: 1, background: '#EF4444', color: 'white', border: 'none', padding: '0.6rem', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                            <Navigation size={16} /> DISPATCH
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => handleCompleteAmbulance(req.id)} style={{ flex: 1, background: '#10B981', color: 'white', border: 'none', padding: '0.6rem', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer' }}>
+                                            ARRIVED / COMPLETE
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <div className="header-actions">
-                    <button className="btn-secondary" onClick={() => navigate('/register/patient')}>
+            )}
+
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
+                <div>
+                    <h2 className="page-title" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#1E293B' }}>Reception Desk</h2>
+                    <p className="page-description" style={{ color: '#64748B' }}>Real-time triage and appointment management</p>
+                </div>
+                <div className="header-actions" style={{ display: 'flex', gap: '1rem' }}>
+                    <button className="btn-secondary" onClick={() => navigate('/register/patient')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem', borderRadius: '0.75rem', border: '1px solid #E2E8F0', background: 'white', fontWeight: 600, cursor: 'pointer' }}>
                         <UserPlus size={18} /> New Patient
                     </button>
-                    <button className="btn-primary" onClick={() => navigate('/patient-portal/book-appointment')}>
+                    <button className="btn-primary" onClick={() => navigate('/patient-portal/book-appointment')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem', borderRadius: '0.75rem', border: 'none', background: '#8BAD89', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
                         <Calendar size={18} /> Book Walk-in
                     </button>
                 </div>
             </div>
 
-            <div className="dashboard-stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon bg-blue"><Users size={20} /></div>
-                    <div className="stat-info">
-                        <span className="stat-label">Total Today</span>
-                        <span className="stat-value">{todayAppointments.length}</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon bg-orange"><Clock size={20} /></div>
-                    <div className="stat-info">
-                        <span className="stat-label">Pending Approval</span>
-                        <span className="stat-value">{pendingRequests.length}</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon bg-green"><CheckCircle size={20} /></div>
-                    <div className="stat-info">
-                        <span className="stat-label">Checked In</span>
-                        <span className="stat-value">{todayAppointments.filter(a => a.status === 'CHECKED_IN' || a.status === 'IN_PROGRESS').length}</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon bg-gray"><CheckCircle size={20} /></div>
-                    <div className="stat-info">
-                        <span className="stat-label">Completed</span>
-                        <span className="stat-value">{todayAppointments.filter(a => a.status === 'COMPLETED').length}</span>
-                    </div>
-                </div>
+            <div className="dashboard-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
+                <StatCard icon={Users} label="Daily Total" value={todayAppointments.length} color="#3B82F6" />
+                <StatCard icon={Clock} label="Pending Triage" value={pendingRequests.length} color="#F59E0B" />
+                <StatCard icon={CheckCircle} label="Checked In" value={todayAppointments.filter(a => a.status === 'CHECKED_IN').length} color="#10B981" />
+                <StatCard icon={AlertCircle} label="Emergencies" value={activeAmbulanceRequests.length} color="#EF4444" />
             </div>
 
-            <div className="dashboard-content-grid">
+            <div className="dashboard-content-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '2rem', alignItems: 'start' }}>
                 {/* Main Appointment List */}
-                <div className="card">
-                    <div className="panel-header">
-                        <h3><Calendar size={18} /> Today's Schedule</h3>
-                        <div className="search-bar">
-                            <Search size={16} className="search-icon" />
+                <div className="card" style={{ background: 'white', borderRadius: '1.25rem', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+                    <div className="panel-header" style={{ padding: '1.5rem', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ fontWeight: 800, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                           <Calendar size={18} color="#8BAD89" /> Today's Schedule
+                        </h3>
+                        <div className="search-bar" style={{ position: 'relative' }}>
+                            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                             <input 
                                 type="text" 
-                                placeholder="Search patient or doctor..." 
+                                placeholder="Search patient..." 
+                                style={{ padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', fontSize: '0.9rem', width: '250px' }}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -198,49 +277,46 @@ const ReceptionistDashboard = () => {
                     </div>
                     <div className="panel-body">
                         <div className="table-container">
-                            <table className="data-table">
+                            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr>
-                                        <th>Time</th>
-                                        <th>Patient</th>
-                                        <th>Doctor</th>
-                                        <th>Token</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
+                                    <tr style={{ textAlign: 'left', background: '#F8FAFC' }}>
+                                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>TIME</th>
+                                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>PATIENT</th>
+                                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>DOCTOR</th>
+                                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>STATUS</th>
+                                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>ACTION</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {isLoading ? (
-                                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Loading...</td></tr>
+                                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#64748B' }}>Loading appointments...</td></tr>
                                     ) : filteredToday.length === 0 ? (
-                                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>No appointments for today.</td></tr>
+                                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#64748B' }}>No appointments found.</td></tr>
                                     ) : (
                                         filteredToday.map(apt => (
-                                            <tr key={apt.id}>
-                                                <td>{formatTime(apt.appointmentTime)}</td>
-                                                <td>
-                                                    <div className="patient-name">{apt.patient.user.name}</div>
-                                                    <div className="appointment-source">{apt.isWalkIn ? 'Walk-in' : 'Booked Online'}</div>
+                                            <tr key={apt.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                                                <td style={{ padding: '1rem', fontWeight: 600 }}>{formatTime(apt.appointmentTime)}</td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{ fontWeight: 700, color: '#1E293B' }}>{`${apt.patient.firstName} ${apt.patient.lastName}`}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{apt.isWalkIn ? 'Walk-in' : 'Booked'}</div>
                                                 </td>
-<<<<<<< HEAD
-                                                <td>{apt.doctor.name}</td>
-=======
-                                                <td>{apt.doctor?.name || <span className="text-muted">Unassigned</span>}</td>
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
-                                                <td><span className="token-badge">{apt.tokenNumber || '-'}</span></td>
-                                                <td>
-                                                    <span className={`status-badge-sm status-${apt.status.toLowerCase()}`}>
-                                                        {apt.status}
-                                                    </span>
+                                                <td style={{ padding: '1rem', fontSize: '0.9rem' }}>{apt.doctor?.name || <span style={{ color: '#F59E0B', fontWeight: 600 }}>Pending Assignment</span>}</td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <span style={{ 
+                                                        fontSize: '0.75rem', 
+                                                        fontWeight: 700, 
+                                                        padding: '0.25rem 0.6rem', 
+                                                        borderRadius: '99px',
+                                                        background: apt.status === 'CHECKED_IN' ? '#D1FAE5' : '#DBEAFE',
+                                                        color: apt.status === 'CHECKED_IN' ? '#065F46' : '#1E40AF'
+                                                    }}>{apt.status}</span>
                                                 </td>
-                                                <td>
+                                                <td style={{ padding: '1rem' }}>
                                                     {apt.status === 'CONFIRMED' || apt.status === 'SCHEDULED' ? (
-                                                        <button className="btn-secondary btn-sm" onClick={() => handleCheckIn(apt.id)}>
+                                                        <button onClick={() => handleCheckIn(apt.id)} style={{ padding: '0.4rem 0.8rem', borderRadius: '0.5rem', background: '#F1F5F9', border: '1px solid #E2E8F0', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
                                                             Check In
                                                         </button>
-                                                    ) : (
-                                                        <span style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>No action available</span>
-                                                    )}
+                                                    ) : '-'}
                                                 </td>
                                             </tr>
                                         ))
@@ -252,252 +328,191 @@ const ReceptionistDashboard = () => {
                 </div>
 
                 {/* Pending Requests Side Panel */}
-                <div className="card">
-                    <div className="panel-header">
-                        <h3><Clock size={18} /> Pending Requests</h3>
+                <div className="card" style={{ background: 'white', borderRadius: '1.25rem', border: '1px solid #E2E8F0', padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontWeight: 800, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Clock size={18} color="#F59E0B" /> Requests
+                        </h3>
+                        <span style={{ padding: '0.2rem 0.6rem', background: '#F59E0B15', color: '#F59E0B', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800 }}>{pendingRequests.length} PENDING</span>
                     </div>
-                    <div className="panel-body">
-                        <div className="requests-container">
-                            {pendingRequests.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)' }}>
-                                    <CheckCircle size={32} style={{ marginBottom: '0.5rem' }} />
-                                    <p>All requests processed!</p>
-                                </div>
-                            ) : (
-                                pendingRequests.map(req => (
-                                    <div key={req.id} className="request-item">
-                                        <div className="request-header">
-                                            <div className="request-patient">
-                                                <div className="patient-name">{req.patient.user.name}</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-<<<<<<< HEAD
-                                                    wants to see <strong>{req.doctor.name}</strong>
-                                                </div>
-                                            </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>{formatTime(req.appointmentTime)}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                                                    {new Date(req.appointmentTime).toLocaleDateString()}
-=======
-                                                    {req.doctor ? (
-                                                        <>wants to see <strong>{req.doctor.name}</strong></>
-                                                    ) : (
-                                                        <>Requires Triage & Assignment</>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>{formatTime(req.appointmentTime || req.preferredDate)}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                                                    {formatDate(req.appointmentTime || req.preferredDate)}
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="request-reason">
-                                            <strong>Reason:</strong> {req.reasonForVisit || 'Not specified'}
-                                        </div>
-                                        <div className="request-actions">
-                                            <button className="btn-primary btn-sm" onClick={() => handleOpenTriage(req)}>
-                                                Triage & Assign
-                                            </button>
-                                            <button className="btn-reject btn-sm" onClick={() => handleCancel(req.id)}>
-                                                Reject
-                                            </button>
-                                        </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {pendingRequests.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8' }}>
+                                <CheckCircle2 size={32} style={{ margin: '0 auto 0.5rem' }} />
+                                <p>All clear!</p>
+                            </div>
+                        ) : (
+                            pendingRequests.map(req => (
+                                <div key={req.id} style={{ border: '1px solid #F1F5F9', borderRadius: '1rem', padding: '1rem', background: '#F8FAFC' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                        <div style={{ fontWeight: 700 }}>{`${req.patient.firstName} ${req.patient.lastName}`}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748B' }}>{formatTime(req.appointmentTime || req.preferredDate, true)}</div>
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                    <div style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: '1rem', background: 'white', padding: '0.5rem', borderRadius: '0.5rem', borderLeft: '3px solid #8BAD89' }}>
+                                        {req.symptoms || req.reasonForVisit || 'General Consultation'}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button onClick={() => handleOpenTriage(req)} style={{ flex: 1, padding: '0.5rem', background: '#8BAD89', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
+                                            Triage & Assign
+                                        </button>
+                                        <button onClick={() => handleCancelClick(req.id)} style={{ padding: '0.5rem', background: 'white', border: '1px solid #FEE2E2', color: '#EF4444', borderRadius: '0.5rem', cursor: 'pointer' }}>
+                                            <XCircle size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* Triage Modal */}
             {isTriageModalOpen && selectedAppointment && (
-                <div className="modal-overlay">
-                    <div className="modal-content triage-modal">
-                        <div className="modal-header">
-                            <h3>Triage Appointment</h3>
-                            <button className="close-btn" onClick={() => setIsTriageModalOpen(false)}>&times;</button>
+                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+                    <div className="modal-content" style={{ background: 'white', borderRadius: '2rem', padding: '2.5rem', width: '600px', maxWidth: '95%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h3 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1E293B', letterSpacing: '-0.02em' }}>Triage & Assignment</h3>
+                            <button onClick={() => setIsTriageModalOpen(false)} style={{ background: '#F1F5F9', border: 'none', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer', color: '#64748B' }}>
+                                <XCircle size={24} />
+                            </button>
                         </div>
-                        <div className="modal-body">
-                            <div className="patient-summary">
-                                <strong>Patient:</strong> {selectedAppointment.patient.user.name} <br/>
-                                <strong>Symptoms:</strong> {selectedAppointment.symptoms} <br/>
-                                <strong>Description:</strong> {selectedAppointment.problemDescription}
+                        
+                        <div style={{ background: '#F8FAFC', padding: '1.5rem', borderRadius: '1.25rem', marginBottom: '2rem', border: '1px solid #E2E8F0' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '0.25rem', display: 'block' }}>Patient</label>
+                                    <div style={{ fontWeight: 700, color: '#1E293B' }}>{`${selectedAppointment.patient.firstName} ${selectedAppointment.patient.lastName}`}</div>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '0.25rem', display: 'block' }}>Dept Preference</label>
+                                    <div style={{ fontWeight: 700, color: '#8BAD89' }}>{selectedAppointment.departmentPreference || 'Not Specified'}</div>
+                                </div>
                             </div>
-                            
-                            <div className="form-group">
-                                <label>Assign Doctor</label>
+                            <div style={{ marginTop: '1rem' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '0.25rem', display: 'block' }}>Reported Symptoms</label>
+                                <div style={{ color: '#475569', lineHeight: 1.5 }}>{selectedAppointment.symptoms || 'No symptoms provided'}</div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.5rem', color: '#1E293B' }}>Assign Specialist</label>
                                 <select 
-                                    className="input-field" 
-                                    value={triageDoctorId} 
-                                    onChange={(e) => setTriageDoctorId(e.target.value)}
+                                    style={{ width: '100%', padding: '0.85rem', borderRadius: '0.75rem', border: '1px solid #E2E8F0', fontSize: '0.95rem', background: '#FFFFFF', outline: 'none' }}
+                                    value={triageDoctorId}
+                                    onChange={e => setTriageDoctorId(e.target.value)}
                                 >
                                     <option value="">Select Doctor...</option>
                                     {doctors.map(dr => (
-                                        <option key={dr.id} value={dr.id}>{dr.name} ({dr.specialization})</option>
+                                        <option key={dr.id} value={dr.id}>{dr.name} - {dr.specialization}</option>
                                     ))}
                                 </select>
                             </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.5rem', color: '#1E293B' }}>Appointment Time</label>
+                                <input 
+                                    type="datetime-local"
+                                    style={{ width: '100%', padding: '0.85rem', borderRadius: '0.75rem', border: '1px solid #E2E8F0', fontFamily: 'Inter', fontSize: '0.95rem', outline: 'none' }}
+                                    value={triageTime}
+                                    onChange={e => setTriageTime(e.target.value)}
+                                />
+                            </div>
+                        </div>
 
-                            <div className="form-group">
-                                <label>Urgency Level</label>
-                                <div className="urgency-selector">
-                                    {(['ROUTINE', 'URGENT', 'EMERGENCY', 'CRITICAL'] as const).map(level => (
+                        <div style={{ marginBottom: '2.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.75rem', color: '#1E293B' }}>Urgency Level</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                                {(['ROUTINE', 'URGENT', 'EMERGENCY', 'CRITICAL'] as const).map(level => {
+                                    const levelColors: any = {
+                                        ROUTINE: { border: '#8BAD89', bg: '#8BAD8910', text: '#3E5C3C' },
+                                        URGENT: { border: '#F59E0B', bg: '#F59E0B10', text: '#92400E' },
+                                        EMERGENCY: { border: '#EF4444', bg: '#EF444410', text: '#991B1B' },
+                                        CRITICAL: { border: '#7C3AED', bg: '#7C3AED10', text: '#5B21B6' }
+                                    };
+                                    const conf = levelColors[level];
+                                    const isActive = triageUrgency === level;
+                                    return (
                                         <button 
                                             key={level}
-                                            className={`urgency-btn ${triageUrgency === level ? 'active' : ''} urgency-${level.toLowerCase()}`}
                                             onClick={() => setTriageUrgency(level)}
+                                            style={{ 
+                                                padding: '1rem 0.5rem', 
+                                                borderRadius: '1rem', 
+                                                border: `2px solid ${isActive ? conf.border : '#F1F5F9'}`,
+                                                background: isActive ? conf.bg : 'white',
+                                                color: isActive ? conf.text : '#64748B',
+                                                fontWeight: 800,
+                                                fontSize: '0.7rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                boxShadow: isActive ? `0 4px 12px ${conf.border}20` : 'none'
+                                            }}
                                         >
                                             {level}
                                         </button>
-                                    ))}
-                                </div>
+                                    );
+                                })}
                             </div>
                         </div>
-                        <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => setIsTriageModalOpen(false)}>Cancel</button>
-                            <button className="btn-primary" onClick={handleTriageSubmit}>Confirm Appointment</button>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={handleTriageSubmit} style={{ flex: 1, padding: '1.25rem', borderRadius: '1rem', border: 'none', background: '#8BAD89', color: 'white', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 10px 20px -5px rgba(139, 173, 137, 0.4)' }}>
+                                Confirm & Assign Specialist
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <style>
-                {`
-                    .modal-overlay {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: rgba(0, 0, 0, 0.5);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        z-index: 1000;
-                        backdrop-filter: blur(4px);
-                    }
-                    .triage-modal {
-                        width: 100%;
-                        max-width: 500px;
-                        background: white;
-                        border-radius: var(--radius-lg);
-                        box-shadow: var(--shadow-lg);
-                    }
-                    .modal-header {
-                        padding: 1.5rem;
-                        border-bottom: 1px solid var(--border-light);
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                    }
-                    .modal-body {
-                        padding: 1.5rem;
-                    }
-                    .modal-footer {
-                        padding: 1.5rem;
-                        border-top: 1px solid var(--border-light);
-                        display: flex;
-                        justify-content: flex-end;
-                        gap: 1rem;
-                    }
-                    .patient-summary {
-                        background: var(--bg-main);
-                        padding: 1rem;
-                        border-radius: var(--radius-md);
-                        margin-bottom: 1.5rem;
-                        font-size: 0.875rem;
-                        line-height: 1.6;
-                    }
-                    .form-group {
-                        margin-bottom: 1.5rem;
-                    }
-                    .form-group label {
-                        display: block;
-                        font-weight: 600;
-                        margin-bottom: 0.5rem;
-                        font-size: 0.875rem;
-                    }
-                    .urgency-selector {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 0.5rem;
-                    }
-                    .urgency-btn {
-                        padding: 0.75rem;
-                        border: 1px solid var(--border);
-                        border-radius: var(--radius-md);
-                        font-size: 0.75rem;
-                        font-weight: 600;
-                        background: white;
-                        transition: all 0.2s;
-                    }
-                    .urgency-btn.active.urgency-routine { background: #FEF3C7; border-color: #F59E0B; color: #B45309; }
-                    .urgency-btn.active.urgency-urgent { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
-                    .urgency-btn.active.urgency-emergency { background: #fecaca; border-color: #dc2626; color: #991b1b; }
-                    .urgency-btn.active.urgency-critical { background: #ed0e0e; border-color: #991b1b; color: white; }
-                    
-                    .bg-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-                    .bg-orange { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-                    .bg-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-                    .bg-gray { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+            {/* Cancellation Modal */}
+            {isCancellationModalOpen && (
+                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2100 }}>
+                    <div className="modal-content" style={{ background: 'white', borderRadius: '2rem', padding: '2.5rem', width: '450px', maxWidth: '90%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                            <div style={{ width: '64px', height: '64px', background: '#FEE2E2', color: '#EF4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                                <XCircle size={32} />
+                            </div>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1E293B', marginBottom: '0.5rem' }}>Cancel Appointment?</h3>
+                            <p style={{ color: '#64748B', fontSize: '0.95rem' }}>This action cannot be undone. Please provide a reason for the patient.</p>
+                        </div>
 
-                    .status-requested { background: #FEF3C7; color: #B45309; }
-                    .status-confirmed { background: #DBEAFE; color: #1E40AF; }
-                    .status-scheduled { background: #E0F2FE; color: #0369A1; }
-                    .status-checked_in { background: #D1FAE5; color: #065F46; }
-                    .status-in_progress { background: #ECFDF5; color: #047857; }
-                    .status-completed { background: #F3F4F6; color: #374151; }
-                    .status-cancelled { background: #FEE2E2; color: #991B1B; }
-                    
-                    .request-item {
-                        transition: transform 0.2s, box-shadow 0.2s;
-                        padding: 1rem;
-                        border: 1px solid var(--border-light);
-                        border-radius: var(--radius-md);
-                        background: var(--bg-main);
-                        animation: fadeIn 0.3s ease-out;
-                    }
-                    .request-item:hover {
-                        transform: translateY(-2px);
-                        box-shadow: var(--shadow-sm);
-                    }
-                    
-                    .request-header {
-                        display: flex;
-                        justify-content: space-between;
-                        margin-bottom: 0.75rem;
-                    }
-                    .patient-name { font-weight: 600; color: var(--text-primary); }
-                    .appointment-source { font-size: 0.75rem; color: var(--text-tertiary); }
-                    .token-badge { font-weight: 700; color: var(--primary); }
+                        <div style={{ marginBottom: '2rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.5rem', color: '#1E293B' }}>Cancellation Reason</label>
+                            <textarea 
+                                placeholder="e.g. Doctor unavailable, patient requested change..."
+                                style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid #E2E8F0', fontSize: '0.95rem', height: '120px', resize: 'none', outline: 'none', fontFamily: 'Inter' }}
+                                value={cancellationReason}
+                                onChange={e => setCancellationReason(e.target.value)}
+                            />
+                        </div>
 
-                    .request-reason {
-                        font-size: 0.85rem;
-                        color: var(--text-secondary);
-                        margin-bottom: 1rem;
-                        padding: 0.5rem;
-                        background: white;
-                        border-radius: 4px;
-                        border-left: 3px solid var(--primary);
-                    }
-                    .request-actions {
-                        display: flex;
-                        gap: 0.5rem;
-                    }
-                    .btn-reject {
-                        flex: 0.4;
-                        background: #FEF2F2;
-                        color: #991B1B;
-                        border: 1px solid #FECACA;
-                    }
-                `}
-            </style>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setIsCancellationModalOpen(false)} style={{ flex: 1, padding: '1rem', borderRadius: '1rem', border: '1px solid #E2E8F0', background: 'white', fontWeight: 700, color: '#64748B', cursor: 'pointer' }}>Go Back</button>
+                            <button onClick={handleCancellationSubmit} style={{ flex: 1, padding: '1rem', borderRadius: '1rem', border: 'none', background: '#EF4444', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Cancel Visit</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes pulse-red { 0%, 100% { border-color: #EF4444; } 50% { border-color: #F87171; box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); } }
+                .btn-dispatch:hover { transform: scale(1.02); filter: brightness(1.1); transition: all 0.2s; }
+            `}</style>
         </div>
     );
 };
+
+const StatCard = ({ icon: Icon, label, value, color }: any) => (
+    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ background: `${color}15`, color: color, padding: '0.75rem', borderRadius: '12px' }}>
+            <Icon size={24} />
+        </div>
+        <div>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 600 }}>{label}</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1E293B' }}>{value}</p>
+        </div>
+    </div>
+);
 
 export default ReceptionistDashboard;

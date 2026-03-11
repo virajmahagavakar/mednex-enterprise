@@ -140,13 +140,11 @@ public class PatientService {
                 return PatientAppointmentResponseDTO.builder()
                         .id(app.getId())
                         .doctorId(app.getDoctor() != null ? app.getDoctor().getId() : null)
-                        .doctorName(app.getDoctor() != null ? app.getDoctor().getName() : "Unknown")
+                        .doctorName(app.getDoctor() != null ? app.getDoctor().getName() : null)
                         .specialization(staffProfile != null ? staffProfile.getSpecialization() : "Medical Professional")
                         .appointmentTime(app.getAppointmentTime())
-<<<<<<< HEAD
-=======
                         .preferredDate(app.getPreferredDate())
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
+                        .department(app.getDepartmentPreference())
                         .status(app.getStatus())
                         .reasonForVisit(app.getReasonForVisit())
                         .notes(app.getNotes())
@@ -173,14 +171,7 @@ public class PatientService {
             }
 
             Patient patient = patientOpt.get();
-            LocalDate dob = null;
-            try {
-                if (patient.getDateOfBirth() != null) {
-                    dob = LocalDate.parse(patient.getDateOfBirth());
-                }
-            } catch (Exception e) {
-                // Invalid date format in DB
-            }
+            LocalDate dob = parseLocalDate(patient.getDateOfBirth());
 
             return PatientProfileDTO.builder()
                     .firstName(patient.getFirstName())
@@ -231,5 +222,20 @@ public class PatientService {
         if (dto.getMedicalHistory() != null)
             patient.setMedicalHistory(dto.getMedicalHistory());
         patientRepository.save(patient);
+    }
+
+    private LocalDate parseLocalDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String cleanDate = dateStr.trim();
+            if (cleanDate.length() > 10) {
+                cleanDate = cleanDate.substring(0, 10);
+            }
+            return LocalDate.parse(cleanDate);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

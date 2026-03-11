@@ -44,9 +44,9 @@ export default function MedicalRecords() {
     }, []);
 
     const filteredRecords = records.filter(record => 
-        record.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (record.reasonForVisit && record.reasonForVisit.toLowerCase().includes(searchTerm.toLowerCase()))
+        (record.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+        (record.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+        (record.reasonForVisit?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
     );
 
     if (loading) {
@@ -124,12 +124,8 @@ export default function MedicalRecords() {
                                 </div>
                             ) : (
                                 filteredRecords.map((record) => {
-<<<<<<< HEAD
-                                    const dateObj = new Date(record.appointmentTime);
-=======
                                     const displayDate = record.appointmentTime || record.preferredDate;
                                     const dateObj = displayDate ? new Date(displayDate) : null;
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                                     const isActive = selectedRecord?.id === record.id;
                                     return (
                                         <button
@@ -149,11 +145,7 @@ export default function MedicalRecords() {
                                         >
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>
-<<<<<<< HEAD
-                                                    {dateObj.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-=======
                                                     {dateObj ? dateObj.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'TBD'}
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                                                 </span>
                                                 <span style={{ 
                                                     fontSize: '0.625rem', 
@@ -167,17 +159,10 @@ export default function MedicalRecords() {
                                                 </span>
                                             </div>
                                             <div style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: '0.25rem', color: 'var(--text-primary)' }}>
-<<<<<<< HEAD
-                                                {dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}
-                                            </div>
-                                            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Stethoscope size={14} color="var(--primary)" /> Dr. {record.doctorName}
-=======
                                                 {dateObj ? dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'long' }) : 'Pending Review'}
                                             </div>
                                             <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <Stethoscope size={14} color="var(--primary)" /> {record.doctorName ? `Dr. ${record.doctorName}` : 'Choosing best doctor...'}
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                                             </div>
                                         </button>
                                     );
@@ -212,13 +197,8 @@ export default function MedicalRecords() {
                                                 <User size={20} color="var(--text-tertiary)" />
                                             </div>
                                             <div>
-<<<<<<< HEAD
-                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Dr. {selectedRecord.doctorName}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>{selectedRecord.specialization}</div>
-=======
                                                 <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedRecord.doctorName ? `Dr. ${selectedRecord.doctorName}` : 'Medical Board'}</div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>{selectedRecord.specialization || 'Triage Ongoing'}</div>
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
                                             </div>
                                         </div>
                                     </div>

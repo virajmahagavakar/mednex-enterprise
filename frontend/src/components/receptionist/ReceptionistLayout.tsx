@@ -20,12 +20,15 @@ interface JWTPayload {
     sub: string;
     roles?: string[];
     hospital_id?: string;
+    name?: string;
+    email?: string;
     exp: number;
 }
 
 const ReceptionistLayout = () => {
     const navigate = useNavigate();
-    const [userEmail, setUserEmail] = useState<string>('Receptionist User');
+    const [userName, setUserName] = useState<string>('Receptionist User');
+    const [userEmail, setUserEmail] = useState<string>('');
     const [userRole, setUserRole] = useState<string>('Receptionist');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -37,7 +40,8 @@ const ReceptionistLayout = () => {
         } else {
             try {
                 const decoded = jwtDecode<JWTPayload>(token);
-                setUserEmail(decoded.sub || 'Receptionist User');
+                setUserName(decoded.name || decoded.sub || 'Receptionist User');
+                setUserEmail(decoded.email || decoded.sub || '');
                 let roleDisplay = 'Receptionist';
                 if (decoded.roles && decoded.roles.length > 0) {
                     roleDisplay = decoded.roles[0]
@@ -67,6 +71,7 @@ const ReceptionistLayout = () => {
         { name: 'Dashboard', path: '/receptionist/dashboard', icon: <LayoutDashboard size={20} /> },
         { name: 'Appointments', path: '/receptionist/appointments', icon: <Calendar size={20} /> },
         { name: 'Ward Management', path: '/receptionist/wards', icon: <BedDouble size={20} /> },
+        { name: 'Ward Availability', path: '/receptionist/availability', icon: <Activity size={20} /> },
         { name: 'ICU Availability', path: '/receptionist/icu', icon: <Activity size={20} /> },
         { name: 'OT Scheduling', path: '/receptionist/ot-schedule', icon: <Clock size={20} /> },
         { name: 'Billing', path: '/receptionist/billing', icon: <CreditCard size={20} /> },
@@ -113,9 +118,9 @@ const ReceptionistLayout = () => {
                     <div className="header-right">
                         <div className="user-profile-container">
                             <div className="user-profile" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                                <div className="avatar">{userEmail.charAt(0).toUpperCase()}</div>
+                                <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
                                 <div className="user-info">
-                                    <span className="user-name">{userEmail}</span>
+                                    <span className="user-name">{userName}</span>
                                     <span className="user-role">{userRole}</span>
                                 </div>
                             </div>
@@ -123,7 +128,7 @@ const ReceptionistLayout = () => {
                             {isDropdownOpen && (
                                 <div className="profile-dropdown">
                                     <div className="dropdown-header">
-                                        <p className="dropdown-name">{userEmail}</p>
+                                        <p className="dropdown-name">{userName}</p>
                                         <p className="dropdown-role">{userRole}</p>
                                     </div>
                                     <div className="dropdown-divider"></div>
@@ -149,10 +154,11 @@ const ReceptionistLayout = () => {
             <ProfileModal
                 isOpen={isProfileModalOpen}
                 onClose={() => setIsProfileModalOpen(false)}
+                userName={userName}
                 userEmail={userEmail}
                 userRole={userRole}
                 onProfileUpdated={(name) => {
-                    setUserEmail(name);
+                    setUserName(name);
                 }}
             />
 

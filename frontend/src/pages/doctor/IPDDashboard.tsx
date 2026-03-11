@@ -9,7 +9,15 @@ const IPDDashboard = () => {
     const [dailyRounds, setDailyRounds] = useState<DailyRoundDTO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [noteContent, setNoteContent] = useState('');
+    const [vitals, setVitals] = useState({
+        temperature: '',
+        bloodPressure: '',
+        heartRate: '',
+        medicationAdjustment: '',
+        nextStep: ''
+    });
     const [isSaving, setIsSaving] = useState(false);
+    const [isRequestingDischarge, setIsRequestingDischarge] = useState(false);
 
     useEffect(() => {
         fetchAdmissions();
@@ -33,6 +41,13 @@ const IPDDashboard = () => {
     const handleSelectAdmission = async (admission: AdmissionDTO) => {
         setSelectedAdmission(admission);
         setNoteContent('');
+        setVitals({
+            temperature: '',
+            bloodPressure: '',
+            heartRate: '',
+            medicationAdjustment: '',
+            nextStep: ''
+        });
         try {
             const rounds = await DoctorService.getDailyRounds(admission.id);
             setDailyRounds(rounds);
@@ -45,14 +60,42 @@ const IPDDashboard = () => {
         if (!selectedAdmission || !noteContent.trim()) return;
         setIsSaving(true);
         try {
-            const newRound = await DoctorService.addDailyRound(selectedAdmission.id, { clinicalNotes: noteContent });
+            const newRound = await DoctorService.addDailyRound(selectedAdmission.id, { 
+                clinicalNotes: noteContent,
+                ...vitals
+            });
             setDailyRounds([...dailyRounds, newRound]);
             setNoteContent('');
+            setVitals({
+                temperature: '',
+                bloodPressure: '',
+                heartRate: '',
+                medicationAdjustment: '',
+                nextStep: ''
+            });
         } catch (error) {
             console.error("Failed to save daily round", error);
             alert("Failed to save note.");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleRequestDischarge = async () => {
+        if (!selectedAdmission) return;
+        if (!window.confirm("Are you sure you want to request discharge for this patient?")) return;
+        
+        setIsRequestingDischarge(true);
+        try {
+            const updated = await DoctorService.requestDischarge(selectedAdmission.id);
+            setSelectedAdmission(updated);
+            setAdmissions(prev => prev.map(a => a.id === updated.id ? updated : a));
+            alert("Discharge requested successfully.");
+        } catch (error) {
+            console.error("Failed to request discharge", error);
+            alert("Failed to request discharge.");
+        } finally {
+            setIsRequestingDischarge(false);
         }
     };
 
@@ -117,9 +160,26 @@ const IPDDashboard = () => {
                                     <User size={24} color="var(--primary)" />
                                     {selectedAdmission.patientName}
                                 </h2>
-                                <span style={{ padding: '0.25rem 0.75rem', backgroundColor: '#FEF3C7', color: '#D97706', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600 }}>
-                                    Bed: {selectedAdmission.bedNumber} ({selectedAdmission.wardName})
-                                </span>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    {selectedAdmission.status === 'DISCHARGE_REQUESTED' && (
+                                        <span style={{ padding: '0.25rem 0.75rem', backgroundColor: 'var(--warning-light)', color: 'var(--warning)', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700 }}>
+                                            DISCHARGE REQUESTED
+                                        </span>
+                                    )}
+                                    <span style={{ padding: '0.25rem 0.75rem', backgroundColor: '#FEF3C7', color: '#D97706', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600 }}>
+                                        Bed: {selectedAdmission.bedNumber} ({selectedAdmission.wardName})
+                                    </span>
+                                    {(selectedAdmission.status === 'ADMITTED' || selectedAdmission.status === 'UNDER_TREATMENT') && (
+                                        <button 
+                                            className="btn-outline" 
+                                            onClick={handleRequestDischarge}
+                                            disabled={isRequestingDischarge}
+                                            style={{ fontSize: '0.8rem', padding: '0.25rem 0.75rem' }}
+                                        >
+                                            {isRequestingDischarge ? 'Processing...' : 'Request Discharge'}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                 <div><strong>Admission ID:</strong> {selectedAdmission.id.split('-')[0]}</div>
@@ -148,9 +208,26 @@ const IPDDashboard = () => {
                                                 <strong>{round.doctorName}</strong>
                                                 <span>{formatDate(round.roundDate)}</span>
                                             </div>
-                                            <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                            <p style={{ margin: '0 0 0.75rem 0', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
                                                 {round.clinicalNotes}
                                             </p>
+                                            {(round.temperature || round.bloodPressure || round.heartRate) && (
+                                                <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', backgroundColor: 'var(--bg-main)', padding: '0.5rem', borderRadius: '4px', marginBottom: '0.75rem' }}>
+                                                    {round.temperature && <span><strong>Temp:</strong> {round.temperature}°C</span>}
+                                                    {round.bloodPressure && <span><strong>BP:</strong> {round.bloodPressure}</span>}
+                                                    {round.heartRate && <span><strong>HR:</strong> {round.heartRate} bpm</span>}
+                                                </div>
+                                            )}
+                                            {round.medicationAdjustment && (
+                                                <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                                                    <strong>Medication:</strong> {round.medicationAdjustment}
+                                                </div>
+                                            )}
+                                            {round.nextStep && (
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>
+                                                    <strong>Plan:</strong> {round.nextStep}
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 )}
@@ -158,10 +235,46 @@ const IPDDashboard = () => {
 
                             <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
                                 <h4 style={{ margin: '0 0 1rem 0', fontWeight: 600 }}>Add New Round Note</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>TEMP (°C)</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-input" 
+                                            value={vitals.temperature} 
+                                            onChange={(e) => setVitals({...vitals, temperature: e.target.value})} 
+                                            placeholder="37.0"
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-input)' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>B.P.</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-input" 
+                                            value={vitals.bloodPressure} 
+                                            onChange={(e) => setVitals({...vitals, bloodPressure: e.target.value})} 
+                                            placeholder="120/80"
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-input)' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>HEART RATE (BPM)</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-input" 
+                                            value={vitals.heartRate} 
+                                            onChange={(e) => setVitals({...vitals, heartRate: e.target.value})} 
+                                            placeholder="72"
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-input)' }}
+                                        />
+                                    </div>
+                                </div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>CLINICAL ASSESSMENT</label>
                                 <textarea
                                     style={{
                                         width: '100%',
-                                        minHeight: '120px',
+                                        minHeight: '100px',
                                         padding: '0.75rem',
                                         borderRadius: 'var(--radius-md)',
                                         border: '1px solid var(--border-input)',
@@ -169,10 +282,35 @@ const IPDDashboard = () => {
                                         resize: 'vertical',
                                         marginBottom: '1rem'
                                     }}
-                                    placeholder="Enter clinical assessment, vitals, plan, etc."
+                                    placeholder="General condition, symptoms, progress..."
                                     value={noteContent}
                                     onChange={(e) => setNoteContent(e.target.value)}
                                 ></textarea>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>MEDICATION ADJUSTMENTS</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-input" 
+                                            value={vitals.medicationAdjustment} 
+                                            onChange={(e) => setVitals({...vitals, medicationAdjustment: e.target.value})} 
+                                            placeholder="Continue existing, increase dose..."
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-input)' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>NEXT STEPS / PLAN</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-input" 
+                                            value={vitals.nextStep} 
+                                            onChange={(e) => setVitals({...vitals, nextStep: e.target.value})} 
+                                            placeholder="Observation, discharge tomorrow..."
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-input)' }}
+                                        />
+                                    </div>
+                                </div>
                                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                     <button
                                         className="btn-primary"
@@ -189,9 +327,11 @@ const IPDDashboard = () => {
             </div>
             <style>
                 {`
-                    .btn-primary { padding: 0.5rem 1rem; border: none; border-radius: var(--radius-md); font-weight: 500; cursor: pointer; transition: all 0.2s; background: var(--primary); color: white; }
+                    .btn-primary { padding: 0.5rem 1rem; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--primary); color: white; }
                     .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
                     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+                    .btn-outline { padding: 0.5rem 1rem; border: 1.5px solid var(--border); border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-main); }
+                    .btn-outline:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--primary); color: var(--primary); }
                 `}
             </style>
         </div>

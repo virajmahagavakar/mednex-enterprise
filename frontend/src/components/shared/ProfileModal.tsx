@@ -4,12 +4,13 @@ import { AdminService } from '../../services/admin.service';
 interface ProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
+    userName: string;
     userEmail: string;
     userRole: string;
     onProfileUpdated: (name: string, contact: string) => void;
 }
 
-const ProfileModal = ({ isOpen, onClose, userEmail, userRole, onProfileUpdated }: ProfileModalProps) => {
+const ProfileModal = ({ isOpen, onClose, userName, userEmail, userRole, onProfileUpdated }: ProfileModalProps) => {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [editName, setEditName] = useState('');
     const [editContact, setEditContact] = useState('');
@@ -60,9 +61,9 @@ const ProfileModal = ({ isOpen, onClose, userEmail, userRole, onProfileUpdated }
                 </div>
                 <div className="modal-body">
                     <div className="profile-hero">
-                        <div className="profile-avatar-large">{userEmail.charAt(0).toUpperCase()}</div>
+                        <div className="profile-avatar-large">{userName.charAt(0).toUpperCase()}</div>
                         {!isEditingProfile ? (
-                            <h2>{userEmail}</h2>
+                            <h2>{userName}</h2>
                         ) : (
                             <input type="text" className="input-field" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Full Name" style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.5rem', width: '80%' }} />
                         )}
@@ -70,6 +71,10 @@ const ProfileModal = ({ isOpen, onClose, userEmail, userRole, onProfileUpdated }
                     </div>
 
                     <div className="profile-details-grid">
+                        <div className="detail-group">
+                            <label>Email Address</label>
+                            <p>{userEmail}</p>
+                        </div>
                         <div className="detail-group">
                             <label>Contact Number (Emergency)</label>
                             {!isEditingProfile ? (

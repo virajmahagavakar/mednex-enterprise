@@ -20,6 +20,7 @@ public class PatientAppointmentResponseDTO {
     private String specialization;
     private LocalDateTime appointmentTime;
     private LocalDateTime preferredDate;
+    private String department;
     private AppointmentStatus status;
     private String reasonForVisit;
     private String notes;

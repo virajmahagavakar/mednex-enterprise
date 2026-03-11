@@ -17,7 +17,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
         @Query("SELECT a FROM Appointment a JOIN FETCH a.patient p LEFT JOIN FETCH a.doctor d WHERE a.doctor.id = :doctorId ORDER BY a.appointmentTime ASC")
         List<Appointment> findByDoctorIdOrderByAppointmentTimeAsc(@Param("doctorId") UUID doctorId);
 
-        @Query("SELECT a FROM Appointment a JOIN FETCH a.doctor WHERE a.patient.id = :patientId ORDER BY a.appointmentTime DESC")
+        @Query("SELECT a FROM Appointment a LEFT JOIN FETCH a.doctor WHERE a.patient.id = :patientId ORDER BY CASE WHEN a.appointmentTime IS NULL THEN 0 ELSE 1 END DESC, a.appointmentTime DESC")
         List<Appointment> findByPatientIdOrderByAppointmentTimeDesc(@Param("patientId") UUID patientId);
 
         @Query("SELECT a FROM Appointment a JOIN FETCH a.patient p LEFT JOIN FETCH a.doctor d WHERE a.doctor.id = :doctorId AND a.appointmentTime BETWEEN :start AND :end ORDER BY a.appointmentTime ASC")

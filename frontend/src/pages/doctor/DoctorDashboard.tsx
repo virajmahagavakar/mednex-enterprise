@@ -2,13 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DoctorService } from '../../services/doctor.service';
 import { TokenService } from '../../services/api.client';
-import type { DoctorDashboardStatsDTO, AppointmentResponse } from '../../services/api.types';
-import { Users, Calendar, Clock, Activity, Search } from 'lucide-react';
+import type { DoctorDashboardStatsDTO, AppointmentResponse, DashboardChartDataDTO, AdmissionDTO } from '../../services/api.types';
+import { Users, Calendar, Clock, Activity, TrendingUp, UserPlus, ClipboardList } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState<DoctorDashboardStatsDTO | null>(null);
     const [todayAppointments, setTodayAppointments] = useState<AppointmentResponse[]>([]);
+    const [waitingQueue, setWaitingQueue] = useState<AppointmentResponse[]>([]);
+    const [activeIpdPatients, setActiveIpdPatients] = useState<AdmissionDTO[]>([]);
+    const [chartData, setChartData] = useState<DashboardChartDataDTO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const doctorName = TokenService.getUserName() || 'Doctor';
 
@@ -19,12 +23,18 @@ const DoctorDashboard = () => {
     const fetchDashboardData = async () => {
         setIsLoading(true);
         try {
-            const [statsData, appointmentsData] = await Promise.all([
+            const [statsData, todayApts, queueData, ipdData, trendData] = await Promise.all([
                 DoctorService.getDashboardStats(),
-                DoctorService.getAppointments(new Date().toISOString().split('T')[0]) // Today's date
+                DoctorService.getTodayAppointments(),
+                DoctorService.getWaitingQueue(),
+                DoctorService.getAdmissionsByDoctor(),
+                DoctorService.getDetailedStats()
             ]);
             setStats(statsData);
-            setTodayAppointments(appointmentsData);
+            setTodayAppointments(todayApts);
+            setWaitingQueue(queueData);
+            setActiveIpdPatients(ipdData.filter(a => a.status === 'ADMITTED').slice(0, 5));
+            setChartData(trendData);
         } catch (error) {
             console.error("Failed to load dashboard data", error);
         } finally {
@@ -54,201 +64,280 @@ const DoctorDashboard = () => {
     };
 
     return (
-        <div className="page-container">
-            <div className="page-header">
-                <div>
-                    <h2 className="page-title">Welcome, Dr. {doctorName}</h2>
-                    <p className="page-description">Here's an overview of your day</p>
+        <div className="dashboard-wrapper">
+            {/* Header Section */}
+            <div className="dashboard-header">
+                <div className="header-left">
+                    <h1 className="welcome-text">
+                        Good day, Dr. {doctorName?.replace(/^(Dr\.|Dr|dr\.|dr)[.,\s]*/g, '').trim() || 'Doctor'}
+                    </h1>
+                    <p className="subtitle">You have {stats?.waitingQueueCount || 0} patients waiting in the queue.</p>
                 </div>
-                <button className="btn-primary" style={{ width: 'auto', padding: '0.625rem 1.25rem' }} onClick={() => navigate('/doctor/schedule')}>
-                    <Calendar size={18} />
-                    Manage Schedule
-                </button>
-            </div>
-
-            {/* Stats Row */}
-            <div className="stats-grid">
-                <div className="card stat-card">
-                    <div className="stat-icon" style={{ backgroundColor: '#E0F2FE', color: '#0284C7' }}>
-                        <Users size={24} />
-                    </div>
-                    <div className="stat-content">
-                        <p className="stat-label">Total Patients</p>
-                        <h4 className="stat-value">{stats?.totalPatients || 0}</h4>
-                    </div>
-                </div>
-                <div className="card stat-card">
-                    <div className="stat-icon" style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}>
-                        <Calendar size={24} />
-                    </div>
-                    <div className="stat-content">
-                        <p className="stat-label">Today's Total</p>
-                        <h4 className="stat-value">{stats?.todayAppointments || 0}</h4>
-                    </div>
-                </div>
-                <div className="card stat-card">
-                    <div className="stat-icon" style={{ backgroundColor: '#FEF9C3', color: '#CA8A04' }}>
-                        <Clock size={24} />
-                    </div>
-                    <div className="stat-content">
-                        <p className="stat-label">Waiting Queue</p>
-                        <h4 className="stat-value">{stats?.waitingQueueCount || 0}</h4>
-                    </div>
-                </div>
-                <div className="card stat-card">
-                    <div className="stat-icon" style={{ backgroundColor: '#E0F2FE', color: '#0284C7' }}>
-                        <Activity size={24} />
-                    </div>
-                    <div className="stat-content">
-                        <p className="stat-label">Completed Today</p>
-                        <h4 className="stat-value">{stats?.completedToday || 0}</h4>
-                    </div>
+                <div className="header-actions">
+                    <button className="btn-secondary-dash" onClick={() => navigate('/doctor/schedule')}>
+                        <Calendar size={18} />
+                        <span>Schedule</span>
+                    </button>
+                    <button className="btn-primary-dash" onClick={() => navigate('/doctor/appointments')}>
+                        <UserPlus size={18} />
+                        <span>New Consult</span>
+                    </button>
                 </div>
             </div>
 
-            <div className="dashboard-content-grid">
-                {/* Today's Schedule List */}
-                <div className="card schedule-panel">
-                    <div className="panel-header">
-                        <h3>Today's Schedule</h3>
-                        <div className="search-bar-sm">
-                            <Search size={14} className="search-icon" />
-                            <input type="text" placeholder="Search patient..." className="search-input-sm" />
+            {/* Quick Stats Grid */}
+            <div className="stats-grid-premium">
+                <div className="stat-card-premium blue">
+                    <div className="stat-icon-wrapper">
+                        <Users size={22} />
+                    </div>
+                    <div className="stat-info">
+                        <span className="label">Total Patients</span>
+                        <h3 className="value">{stats?.totalPatients || 0}</h3>
+                        <span className="trend positive">+12% from last month</span>
+                    </div>
+                </div>
+                <div className="stat-card-premium green">
+                    <div className="stat-icon-wrapper">
+                        <ClipboardList size={22} />
+                    </div>
+                    <div className="stat-info">
+                        <span className="label">Today's Total</span>
+                        <h3 className="value">{stats?.todayAppointments || 0}</h3>
+                        <span className="trend">Next: {stats?.nextAppointmentTime || '---'}</span>
+                    </div>
+                </div>
+                <div className="stat-card-premium yellow">
+                    <div className="stat-icon-wrapper">
+                        <Clock size={22} />
+                    </div>
+                    <div className="stat-info">
+                        <span className="label">Waiting Queue</span>
+                        <h3 className="value">{stats?.waitingQueueCount || 0}</h3>
+                        <span className="trend warning">Needs attention</span>
+                    </div>
+                </div>
+                <div className="stat-card-premium purple">
+                    <div className="stat-icon-wrapper">
+                        <Activity size={22} />
+                    </div>
+                    <div className="stat-info">
+                        <span className="label">Active IPD</span>
+                        <h3 className="value">{stats?.activeIpdPatients || 0}</h3>
+                        <span className="trend">Current admitted</span>
+                    </div>
+                </div>
+                <div className="stat-card-premium indigo">
+                    <div className="stat-icon-wrapper">
+                        <ClipboardList size={22} />
+                    </div>
+                    <div className="stat-info">
+                        <span className="label">Completed Today</span>
+                        <h3 className="value">{stats?.completedToday || 0}</h3>
+                        <span className="trend positive">Great progress!</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="dashboard-main-grid">
+                {/* Workload Chart */}
+                <div className="chart-container card-premium">
+                    <div className="card-header-premium">
+                        <div className="header-title-group">
+                            <TrendingUp size={20} className="header-icon" />
+                            <h3>Clinical Workload Trends</h3>
+                        </div>
+                        <select className="period-select">
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div className="chart-wrapper">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorSeen" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                />
+                                <Area type="monotone" dataKey="patientsSeen" stroke="#2563EB" strokeWidth={3} fillOpacity={1} fill="url(#colorSeen)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Previews Grid */}
+                <div className="previews-grid">
+                    {/* Waiting Queue */}
+                    <div className="preview-panel card-premium">
+                        <div className="card-header-premium">
+                            <h3>Waiting Queue</h3>
+                            <button className="view-all-link" onClick={() => navigate('/doctor/appointments')}>View Full Queue</button>
+                        </div>
+                        <div className="preview-list">
+                            {isLoading ? (
+                                <div className="loading-state-dash">Loading...</div>
+                            ) : waitingQueue.length === 0 ? (
+                                <div className="empty-state-dash">No patients waiting</div>
+                            ) : (
+                                waitingQueue.map(apt => (
+                                    <div key={apt.id} className="preview-item">
+                                        <div className="item-info">
+                                            <span className="patient-name">{apt.patientName}</span>
+                                            <span className="token-badge">Token #{apt.tokenNumber || 'N/A'}</span>
+                                        </div>
+                                        <button className="btn-action-small" onClick={() => handleStartVisit(apt)}>Start</button>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
 
-                    <div className="schedule-list">
-                        {isLoading ? (
-                            <div className="loading-state">
-                                <div className="spinner"></div>
-                                <p>Loading schedule...</p>
-                            </div>
-                        ) : todayAppointments.length === 0 ? (
-                            <div className="empty-state">
-                                <Calendar size={32} color="var(--text-tertiary)" />
-                                <p>No appointments today.</p>
-                            </div>
-                        ) : (
-                            todayAppointments.map((apt) => (
-                                <div key={apt.id} className="appointment-item">
-                                    <div className="apt-time">
-                                        <span>{formatTime(apt.appointmentTime)}</span>
+                    {/* Upcoming Appointments */}
+                    <div className="preview-panel card-premium">
+                        <div className="card-header-premium">
+                            <h3>Upcoming</h3>
+                            <button className="view-all-link" onClick={() => navigate('/doctor/appointments')}>Full Schedule</button>
+                        </div>
+                        <div className="preview-list">
+                            {isLoading ? (
+                                <div className="loading-state-dash">Loading...</div>
+                            ) : todayAppointments.filter(a => a.status === 'SCHEDULED' || a.status === 'CONFIRMED').slice(0, 4).length === 0 ? (
+                                <div className="empty-state-dash">No upcoming appointments</div>
+                            ) : (
+                                todayAppointments.filter(a => a.status === 'SCHEDULED' || a.status === 'CONFIRMED').slice(0, 4).map(apt => (
+                                    <div key={apt.id} className="preview-item">
+                                        <div className="item-info">
+                                            <span className="patient-name">{apt.patientName}</span>
+                                            <span className="time-info"><Clock size={12} /> {formatTime(apt.appointmentTime)}</span>
+                                        </div>
+                                        <span className={`status-dot ${getStatusBadgeClass(apt.status)}`}></span>
                                     </div>
-                                    <div className="apt-details">
-                                        <div className="apt-patient-name">{apt.patientName}</div>
-                                        <div className="apt-reason">{apt.reasonForVisit || 'General Follow-up'}</div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Active IPD */}
+                    <div className="preview-panel card-premium">
+                        <div className="card-header-premium">
+                            <h3>Active IPD</h3>
+                            <button className="view-all-link" onClick={() => navigate('/doctor/ipd')}>Manage IPD</button>
+                        </div>
+                        <div className="preview-list">
+                            {isLoading ? (
+                                <div className="loading-state-dash">Loading...</div>
+                            ) : activeIpdPatients.length === 0 ? (
+                                <div className="empty-state-dash">No admitted patients</div>
+                            ) : (
+                                activeIpdPatients.map(ipd => (
+                                    <div key={ipd.id} className="preview-item" onClick={() => navigate(`/doctor/ipd/patient/${ipd.patientId}`)}>
+                                        <div className="item-info">
+                                            <span className="patient-name">{ipd.patientName}</span>
+                                            <span className="bed-info">{ipd.wardName} - Bed {ipd.bedNumber}</span>
+                                        </div>
+                                        <Activity size={16} className="item-icon-small" />
                                     </div>
-                                    <div className="apt-status">
-                                        <span className={`status-badge-sm ${getStatusBadgeClass(apt.status)}`}>
-                                            {apt.status}
-                                        </span>
-                                    </div>
-                                    <div className="apt-actions">
-                                        {apt.status === 'COMPLETED' ? (
-                                            <span className="text-success text-sm font-semibold">Done</span>
-                                        ) : (
-                                            <button className="btn-outline-sm" onClick={() => handleStartVisit(apt)}>Start Visit</button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-
-
             <style>
                 {`
-                    .page-container { display: flex; flex-direction: column; gap: 1.5rem; }
-                    .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
-                    .page-title { font-size: 1.5rem; margin-bottom: 0.25rem; font-weight: 600; color: var(--text-primary); }
-                    .page-description { color: var(--text-secondary); font-size: 0.875rem; }
+                    .dashboard-wrapper { display: flex; flex-direction: column; gap: 2rem; padding: 1.5rem; padding-bottom: 2rem; }
                     
-                    .card { background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); }
+                    /* Header Area */
+                    .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; }
+                    .welcome-text { font-size: 1.875rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; letter-spacing: -0.025em; }
+                    .subtitle { color: #64748b; font-size: 1rem; }
+                    .header-actions { display: flex; gap: 0.75rem; }
                     
-                    /* Stats Grid */
-                    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-                    .stat-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; }
-                    .stat-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-                    .stat-content { display: flex; flex-direction: column; }
-                    .stat-label { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
-                    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+                    .btn-primary-dash { display: flex; align-items: center; gap: 0.5rem; background: #2563eb; color: white; padding: 0.75rem 1.25rem; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+                    .btn-primary-dash:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); }
+                    
+                    .btn-secondary-dash { display: flex; align-items: center; gap: 0.5rem; background: white; color: #0f172a; padding: 0.75rem 1.25rem; border-radius: 12px; font-weight: 600; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+                    .btn-secondary-dash:hover { background: #f8fafc; border-color: #cbd5e1; }
 
-                    .dashboard-content-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+                    /* Premium Stats Grid */
+                    .stats-grid-premium { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; }
+                    .stat-card-premium { background: white; border-radius: 20px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
                     
-                    /* Schedule Panel */
-                    .schedule-panel { display: flex; flex-direction: column; }
-                    .panel-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; }
-                    .panel-header h3 { font-size: 1.125rem; font-weight: 600; margin: 0; color: var(--text-primary); }
+                    .stat-icon-wrapper { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+                    .stat-info { display: flex; flex-direction: column; }
+                    .stat-info .label { font-size: 0.875rem; color: #64748b; font-weight: 500; }
+                    .stat-info .value { font-size: 1.75rem; font-weight: 800; color: #0f172a; margin: 0.25rem 0; letter-spacing: -0.025em; }
+                    .trend { font-size: 0.75rem; font-weight: 600; }
+                    .trend.positive { color: #10b981; }
+                    .trend.warning { color: #f59e0b; }
                     
-                    .search-bar-sm { position: relative; width: 220px; }
-                    .search-input-sm { width: 100%; padding: 0.4rem 1rem 0.4rem 2rem; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.875rem; }
-                    .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
+                    .blue { color: #2563eb; } .blue .stat-icon-wrapper { background: #eff6ff; }
+                    .green { color: #059669; } .green .stat-icon-wrapper { background: #ecfdf5; }
+                    .yellow { color: #d97706; } .yellow .stat-icon-wrapper { background: #fffbeb; }
+                    .purple { color: #7c3aed; } .purple .stat-icon-wrapper { background: #f5f3ff; }
+                    .indigo { color: #4f46e5; } .indigo .stat-icon-wrapper { background: #eef2ff; }
 
-                    .schedule-list { display: flex; flex-direction: column; }
-                    .appointment-item { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-light); gap: 1rem; transition: background-color 0.2s; }
-                    .appointment-item:hover { background-color: var(--bg-main); }
-                    .appointment-item:last-child { border-bottom: none; }
+                    /* Main Layout */
+                    .dashboard-main-grid { display: flex; flex-direction: column; gap: 1.5rem; }
+                    .card-premium { background: white; border-radius: 20px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
                     
-                    .apt-time { min-width: 80px; font-weight: 600; color: var(--primary); font-size: 0.875rem; border-right: 2px solid var(--primary-light); padding-right: 1rem; }
-                    .apt-details { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
-                    .apt-patient-name { font-weight: 600; font-size: 1rem; color: var(--text-primary); }
-                    .apt-reason { font-size: 0.875rem; color: var(--text-secondary); }
+                    .card-header-premium { padding: 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+                    .header-title-group { display: flex; align-items: center; gap: 0.75rem; }
+                    .header-title-group h3 { font-size: 1.125rem; font-weight: 700; color: #0f172a; margin: 0; }
+                    .header-icon { color: #2563eb; }
                     
-                    .apt-status { min-width: 100px; }
-                    .status-badge-sm { padding: 0.25rem 0.625rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-                    .status-upcoming { background-color: #FEF9C3; color: #CA8A04; border: 1px solid #FEF08A; }
-                    .status-active { background-color: #DBEAFE; color: #2563EB; border: 1px solid #BFDBFE; }
-                    .status-completed { background-color: #DCFCE7; color: #16A34A; border: 1px solid #BBF7D0; }
-                    .status-cancelled { background-color: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+                    .period-select { padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.875rem; font-weight: 500; color: #475569; outline: none; }
                     
-                    .apt-actions { min-width: 100px; display: flex; justify-content: flex-end; }
-                    .btn-outline-sm { padding: 0.4rem 0.75rem; border: 1px solid var(--primary); color: var(--primary); border-radius: var(--radius-md); background: transparent; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-                    .btn-outline-sm:hover { background: var(--primary); color: white; }
-                    
-                    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; color: var(--text-tertiary); gap: 1rem; }
-                    .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; color: var(--text-secondary); gap: 1rem; }
-                    .spinner { width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-                    @keyframes spin { to { transform: rotate(360deg); } }
+                    .chart-wrapper { padding: 1.5rem; }
 
-                    /* Modal Styles */
-                    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-                    .modal-content { background: white; border-radius: var(--radius-lg); width: 90%; max-width: 500px; display: flex; flex-direction: column; max-height: 90vh; }
-                    .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; }
-                    .modal-header h2 { margin: 0; font-size: 1.25rem; color: var(--text-primary); }
-                    .close-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); transition: background-color 0.2s; }
-                    .close-btn:hover { background-color: var(--bg-hover); color: var(--text-primary); }
-                    .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
-                    .modal-footer { padding: 1.5rem; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; gap: 1rem; }
+                    /* Previews Grid */
+                    .previews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+                    .preview-panel { display: flex; flex-direction: column; height: 100%; }
+                    .view-all-link { background: none; border: none; color: #2563eb; font-size: 0.875rem; font-weight: 600; cursor: pointer; padding: 0; }
+                    .view-all-link:hover { text-decoration: underline; }
                     
-                    /* Form elements */
-                    .form-group { margin-bottom: 1.25rem; }
-                    .form-group label { display: block; font-weight: 500; font-size: 0.875rem; color: var(--text-primary); margin-bottom: 0.5rem; }
-                    .form-control { width: 100%; padding: 0.625rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.9375rem; color: var(--text-primary); transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
-                    .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+                    .preview-list { display: flex; flex-direction: column; }
+                    .preview-item { padding: 1rem 1.5rem; border-bottom: 1px solid #f8fafc; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+                    .preview-item:last-child { border-bottom: none; }
+                    .preview-item:hover { background-color: #f8fafc; cursor: pointer; }
                     
-                    /* Search Dropdown */
-                    .search-bar { position: relative; }
-                    .search-input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); }
-                    .search-results { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1px solid var(--border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 10; max-height: 250px; overflow-y: auto; }
-                    .search-result-item { padding: 0.75rem; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-                    .search-result-item:hover { background-color: var(--bg-main); }
-                    .search-result-item:last-child { border-bottom: none; }
-                    .btn-icon { background: var(--bg-main); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 0.25rem; display: flex; align-items: center;}
-                    .btn-icon:hover { background: #DBEAFE; color: #2563EB; border-color: #BFDBFE; }
+                    .item-info { display: flex; flex-direction: column; gap: 0.125rem; }
+                    .patient-name { font-weight: 600; color: #1e293b; font-size: 0.9375rem; }
+                    .token-badge { font-size: 0.75rem; color: #64748b; font-weight: 500; }
+                    .time-info { display: flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; color: #64748b; font-weight: 500; }
+                    .bed-info { font-size: 0.75rem; color: #64748b; font-weight: 500; }
                     
-                    /* Prescriptions List */
-                    .prescription-list { display: flex; flex-direction: column; gap: 1rem; }
-                    .prescription-item { border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem; background-color: var(--bg-main); }
-                    .item-header { display: flex; justify-content: space-between; align-items: center; }
-                    .text-danger { background: none; border: none; color: var(--danger); cursor: pointer; }
-                    .text-success { color: var(--success); }
+                    .btn-action-small { background: #eff6ff; color: #2563eb; border: none; padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+                    .btn-action-small:hover { background: #2563eb; color: white; }
                     
-                    .btn-secondary { padding: 0.625rem 1.25rem; background-color: white; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); font-weight: 500; cursor: pointer; transition: all 0.2s; }
-                    .btn-secondary:hover { background-color: var(--bg-hover); }
-                    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+                    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+                    .status-dot.status-upcoming { background-color: #f59e0b; }
+                    .status-dot.status-active { background-color: #2563eb; }
+                    .status-dot.status-completed { background-color: #10b981; }
+                    
+                    .item-icon-small { color: #94a3b8; }
+                    
+                    .empty-state-dash { padding: 3rem 1.5rem; text-align: center; color: #94a3b8; font-size: 0.875rem; }
+                    .loading-state-dash { padding: 3rem 1.5rem; text-align: center; color: #64748b; font-size: 0.875rem; }
+
+                    @media (max-width: 1280px) {
+                        .stats-grid-premium { grid-template-columns: repeat(3, 1fr); }
+                        .previews-grid { grid-template-columns: repeat(2, 1fr); }
+                    }
+                    @media (max-width: 768px) {
+                        .stats-grid-premium { grid-template-columns: repeat(2, 1fr); }
+                        .previews-grid { grid-template-columns: 1fr; }
+                    }
                 `}
             </style>
         </div>

@@ -28,6 +28,13 @@ public class Ward {
     @JoinColumn(name = "branch_id", nullable = false)
     private Branch branch;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "floor_id")
+    private Floor floor;
+
+    @Enumerated(EnumType.STRING)
+    private WardType wardType;
+
     @Column(nullable = false)
     private Integer totalCapacity;
 

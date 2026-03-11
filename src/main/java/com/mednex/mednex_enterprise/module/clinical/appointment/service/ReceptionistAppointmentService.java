@@ -1,38 +1,26 @@
 package com.mednex.mednex_enterprise.module.clinical.appointment.service;
 
-<<<<<<< HEAD
-import com.mednex.mednex_enterprise.core.repository.UserRepository;
-=======
 import com.mednex.mednex_enterprise.core.entity.StaffProfile;
 import com.mednex.mednex_enterprise.core.entity.User;
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.DoctorInfoDTO;
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.TriageRequestDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.Appointment;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.AppointmentStatus;
 import com.mednex.mednex_enterprise.module.clinical.appointment.entity.UrgencyLevel;
-<<<<<<< HEAD
-=======
 import com.mednex.mednex_enterprise.core.repository.StaffProfileRepository;
 import com.mednex.mednex_enterprise.core.repository.UserRepository;
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
 import com.mednex.mednex_enterprise.module.clinical.appointment.repository.AppointmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-<<<<<<< HEAD
-import java.util.List;
-import java.util.UUID;
-=======
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.AppointmentResponseDTO;
 import com.mednex.mednex_enterprise.module.clinical.appointment.dto.PatientResponseDTO;
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
 
 @Service
 @RequiredArgsConstructor
@@ -40,50 +28,6 @@ public class ReceptionistAppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
-<<<<<<< HEAD
-
-    public List<Appointment> getRequestedAppointments() {
-        return appointmentRepository.findByStatusInOrderByAppointmentTimeAsc(
-                List.of(AppointmentStatus.REQUESTED, AppointmentStatus.PENDING));
-    }
-
-    public List<Appointment> getAllAppointmentsForToday() {
-        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
-        return appointmentRepository.findByAppointmentTimeBetweenOrderByAppointmentTimeAsc(startOfDay, endOfDay);
-    }
-
-    @Transactional
-    public Appointment approveAppointment(UUID appointmentId) {
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
-        
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
-        return appointmentRepository.save(appointment);
-    }
-
-    @Transactional
-    public Appointment checkInPatient(UUID appointmentId) {
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
-        
-        appointment.setStatus(AppointmentStatus.CHECKED_IN);
-        return appointmentRepository.save(appointment);
-    }
-
-    @Transactional
-    public Appointment triageAppointment(UUID appointmentId, TriageRequestDTO triageRequest) {
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
-        
-        if (triageRequest.getDoctorId() != null) {
-            appointment.setDoctor(userRepository.findById(triageRequest.getDoctorId())
-                    .orElseThrow(() -> new IllegalArgumentException("Doctor not found")));
-        }
-        
-        appointment.setUrgencyLevel(triageUrgencyOrDefault(triageRequest.getUrgencyLevel()));
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
-=======
     private final StaffProfileRepository staffProfileRepository;
     private final TriageEngineService triageEngineService;
 
@@ -97,7 +41,9 @@ public class ReceptionistAppointmentService {
     @Transactional(readOnly = true)
     public List<AppointmentResponseDTO> getPendingAppointments() {
         return appointmentRepository.findByStatusInOrderByAppointmentTimeAsc(
-                List.of(AppointmentStatus.REQUESTED, AppointmentStatus.TRIAGED, AppointmentStatus.PENDING)).stream()
+                List.of(AppointmentStatus.REQUESTED, AppointmentStatus.TRIAGED, AppointmentStatus.PENDING,
+                        AppointmentStatus.DENIED, AppointmentStatus.TRANSFERRED))
+                .stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -115,7 +61,7 @@ public class ReceptionistAppointmentService {
     public AppointmentResponseDTO triageAppointment(UUID appointmentId, TriageRequestDTO triageRequest) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
-        
+
         // Use Triage Engine if no specific urgency provided
         if (triageRequest.getUrgencyLevel() == null) {
             TriageEngineService.TriageSuggestion suggestion = triageEngineService.suggest(appointment.getSymptoms());
@@ -130,26 +76,22 @@ public class ReceptionistAppointmentService {
         if (triageRequest.getDoctorId() != null) {
             assignDoctor(appointment, triageRequest.getDoctorId());
         }
-        
+
         if (triageRequest.getAppointmentTime() != null) {
             scheduleSlot(appointment, triageRequest.getAppointmentTime());
         }
-        
+
         // Transition state based on what's assigned
         if (appointment.getDoctor() != null && appointment.getAppointmentTime() != null) {
             appointment.setStatus(AppointmentStatus.SCHEDULED);
         } else {
             appointment.setStatus(AppointmentStatus.TRIAGED);
         }
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
-        
+
         if (triageRequest.getNotes() != null) {
             appointment.setNotes(triageRequest.getNotes());
         }
-        
-<<<<<<< HEAD
-        return appointmentRepository.save(appointment);
-=======
+
         return mapToResponseDTO(appointmentRepository.save(appointment));
     }
 
@@ -162,13 +104,12 @@ public class ReceptionistAppointmentService {
         if (appointment.getDoctor() == null) {
             throw new IllegalStateException("Cannot schedule slot without an assigned doctor");
         }
-        
+
         if (appointmentRepository.existsByDoctorIdAndAppointmentTime(appointment.getDoctor().getId(), time)) {
             throw new RuntimeException("Slot already booked for this doctor at " + time);
         }
-        
+
         appointment.setAppointmentTime(time);
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
     }
 
     private UrgencyLevel triageUrgencyOrDefault(UrgencyLevel level) {
@@ -176,28 +117,21 @@ public class ReceptionistAppointmentService {
     }
 
     @Transactional
-<<<<<<< HEAD
-    public Appointment cancelAppointment(UUID appointmentId, String reason) {
-=======
     public AppointmentResponseDTO checkInPatient(UUID appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
-        
+
         appointment.setStatus(AppointmentStatus.CHECKED_IN);
         return mapToResponseDTO(appointmentRepository.save(appointment));
     }
 
     @Transactional
     public AppointmentResponseDTO cancelAppointment(UUID appointmentId, String reason) {
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
-        
+
         appointment.setStatus(AppointmentStatus.CANCELLED);
         appointment.setNotes(reason);
-<<<<<<< HEAD
-        return appointmentRepository.save(appointment);
-=======
         return mapToResponseDTO(appointmentRepository.save(appointment));
     }
 
@@ -205,7 +139,7 @@ public class ReceptionistAppointmentService {
     public AppointmentResponseDTO approveAppointment(UUID appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
-        
+
         appointment.setStatus(AppointmentStatus.CONFIRMED);
         return mapToResponseDTO(appointmentRepository.save(appointment));
     }
@@ -228,8 +162,9 @@ public class ReceptionistAppointmentService {
     }
 
     private AppointmentResponseDTO mapToResponseDTO(Appointment entity) {
-        if (entity == null) return null;
-        
+        if (entity == null)
+            return null;
+
         return AppointmentResponseDTO.builder()
                 .id(entity.getId())
                 .status(entity.getStatus())
@@ -251,8 +186,10 @@ public class ReceptionistAppointmentService {
                 .build();
     }
 
-    private PatientResponseDTO mapPatientToDTO(com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient patient) {
-        if (patient == null) return null;
+    private PatientResponseDTO mapPatientToDTO(
+            com.mednex.mednex_enterprise.module.clinical.patient.entity.Patient patient) {
+        if (patient == null)
+            return null;
         return PatientResponseDTO.builder()
                 .id(patient.getId())
                 .firstName(patient.getFirstName())
@@ -265,7 +202,8 @@ public class ReceptionistAppointmentService {
     }
 
     private DoctorInfoDTO mapDoctorToDTO(User doctor) {
-        if (doctor == null) return null;
+        if (doctor == null)
+            return null;
         StaffProfile profile = staffProfileRepository.findByUserId(doctor.getId()).orElse(null);
         return DoctorInfoDTO.builder()
                 .id(doctor.getId())
@@ -275,6 +213,5 @@ public class ReceptionistAppointmentService {
                 .yearsOfExperience(profile != null ? profile.getYearsOfExperience() : 0)
                 .defaultConsultationFee(profile != null ? profile.getDefaultConsultationFee() : null)
                 .build();
->>>>>>> 004ae865de593a2f84f799d3147435c4e91fa6d3
     }
 }

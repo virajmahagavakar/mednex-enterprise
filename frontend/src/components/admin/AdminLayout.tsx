@@ -8,7 +8,9 @@ import {
   LogOut,
   LayoutDashboard,
   Menu,
-  UserCircle
+  UserCircle,
+  Map as MapIcon,
+  Monitor,
 } from 'lucide-react';
 import { AuthService } from '../../services/auth.service';
 import { TokenService } from '../../services/api.client';
@@ -20,12 +22,15 @@ interface JWTPayload {
   sub: string;
   roles?: string[];
   hospital_id?: string;
+  name?: string;
+  email?: string;
   exp: number;
 }
 
 const AdminLayout = () => {
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState<string>('Admin User');
+  const [userName, setUserName] = useState<string>('Admin User');
+  const [userEmail, setUserEmail] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('Hospital Admin');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -34,7 +39,8 @@ const AdminLayout = () => {
   const fetchProfileDetails = async () => {
     try {
       const profile = await AdminService.getProfile();
-      setUserEmail(profile.name || profile.email);
+      setUserName(profile.name || profile.email);
+      setUserEmail(profile.email);
     } catch (e) {
       console.error("Failed to fetch fresh profile details", e);
     }
@@ -47,7 +53,8 @@ const AdminLayout = () => {
     } else {
       try {
         const decoded = jwtDecode<JWTPayload>(token);
-        setUserEmail(decoded.sub || 'Admin User');
+        setUserName(decoded.name || decoded.sub || 'Admin User');
+        setUserEmail(decoded.email || decoded.sub || '');
 
         let roleDisplay = 'Hospital Admin';
         if (decoded.roles && decoded.roles.length > 0) {
@@ -84,6 +91,8 @@ const AdminLayout = () => {
     { name: 'Branches', path: '/admin/branches', icon: <Building2 size={20} />, roles: ['Hospital Admin', 'Admin'] },
     { name: 'Staff & Roles', path: '/admin/staff', icon: <Users size={20} />, roles: ['Hospital Admin', 'Branch Admin', 'Admin'] },
     { name: 'Subscription', path: '/admin/subscription', icon: <CreditCard size={20} />, roles: ['Hospital Admin', 'Branch Admin', 'Admin'] },
+    { name: 'Infrastructure', path: '/admin/infrastructure', icon: <MapIcon size={20} />, roles: ['Hospital Admin', 'Admin'] },
+    { name: 'Assets & Biomedical', path: '/admin/assets', icon: <Monitor size={20} />, roles: ['Hospital Admin', 'Admin'] },
     { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} />, roles: ['Hospital Admin', 'Admin'] },
   ].filter(item => {
     // Case insensitive/Contains check to be safer
@@ -131,9 +140,9 @@ const AdminLayout = () => {
           <div className="header-right">
             <div className="user-profile-container">
               <div className="user-profile" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                <div className="avatar">{userEmail.charAt(0).toUpperCase()}</div>
+                <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
                 <div className="user-info">
-                  <span className="user-name">{userEmail}</span>
+                  <span className="user-name">{userName}</span>
                   <span className="user-role">{userRole}</span>
                 </div>
               </div>
@@ -141,7 +150,7 @@ const AdminLayout = () => {
               {isDropdownOpen && (
                 <div className="profile-dropdown">
                   <div className="dropdown-header">
-                    <p className="dropdown-name">{userEmail}</p>
+                    <p className="dropdown-name">{userName}</p>
                     <p className="dropdown-role">{userRole}</p>
                   </div>
                   <div className="dropdown-divider"></div>
@@ -168,10 +177,11 @@ const AdminLayout = () => {
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+        userName={userName}
         userEmail={userEmail}
         userRole={userRole}
         onProfileUpdated={(name) => {
-          setUserEmail(name);
+          setUserName(name);
         }}
       />
 

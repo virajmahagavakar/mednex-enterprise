@@ -2,8 +2,20 @@ import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { DoctorService } from '../../services/doctor.service';
 import { DiagnosticService } from '../../services/diagnostics.service';
-import type { PatientResponse, ClinicalNoteDTO, AppointmentResponse, MedicineDTO, AdmissionDTO, DiagnosticTestCatalogDTO } from '../../services/api.types';
-import { User, Calendar, Clock, Activity, FileText, ChevronLeft, Save, Search, X, Plus, Beaker } from 'lucide-react';
+import type { 
+    PatientResponse, 
+    ClinicalNoteDTO, 
+    AppointmentResponse, 
+    MedicineDTO, 
+    AdmissionDTO, 
+    DiagnosticTestCatalogDTO, 
+    AdmissionStatus,
+    PatientEMRResponse,
+    PrescriptionResponse,
+    LabTestRequestResponse,
+    VitalsResponse
+} from '../../services/api.types';
+import { User, Calendar, Activity, FileText, ChevronLeft, Save, Search, X, Plus, Beaker, Bed, Ban, Share2, ClipboardList, Thermometer } from 'lucide-react';
 
 const PatientEMR = () => {
     const { id: patientId } = useParams<{ id: string }>();
@@ -14,9 +26,21 @@ const PatientEMR = () => {
 
     const [patient, setPatient] = useState<PatientResponse | null>(null);
     const [notes, setNotes] = useState<ClinicalNoteDTO[]>([]);
+    const [prescriptions, setPrescriptions] = useState<PrescriptionResponse[]>([]);
+    const [labReports, setLabReports] = useState<LabTestRequestResponse[]>([]);
+    const [vitalsHistory, setVitalsHistory] = useState<VitalsResponse[]>([]);
     const [appointment, setAppointment] = useState<AppointmentResponse | null>(null);
     const [admissions, setAdmissions] = useState<AdmissionDTO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Deny/Transfer Modal States
+    const [isDenyModalOpen, setIsDenyModalOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [denyReason, setDenyReason] = useState('');
+    const [transferDept, setTransferDept] = useState('');
+    const [transferDoctorId, setTransferDoctorId] = useState('');
+    const [transferReason, setTransferReason] = useState('');
+    const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
     // SOAP Note Form State
     const [subjective, setSubjective] = useState('');
@@ -36,6 +60,21 @@ const PatientEMR = () => {
     const [diagnosticCatalog, setDiagnosticCatalog] = useState<DiagnosticTestCatalogDTO[]>([]);
     const [searchTest, setSearchTest] = useState('');
     const [selectedTests, setSelectedTests] = useState<DiagnosticTestCatalogDTO[]>([]);
+    
+    // Admission Request State
+    const [isAdmissionModalOpen, setIsAdmissionModalOpen] = useState(false);
+    const [admissionReason, setAdmissionReason] = useState('');
+    const [admissionUrgency, setAdmissionUrgency] = useState('ROUTINE');
+    const [admissionDepartment, setAdmissionDepartment] = useState('');
+    const [admissionCareLevel, setAdmissionCareLevel] = useState('GENERAL'); // NEW: Care Level
+    const [isSubmittingAdmission, setIsSubmittingAdmission] = useState(false);
+
+    const formatDoctorName = (name?: string) => {
+        if (!name) return 'N/A';
+        const trimmed = name.trim();
+        if (trimmed.toLowerCase().startsWith('dr.')) return trimmed;
+        return `Dr. ${trimmed}`;
+    };
 
     useEffect(() => {
         if (patientId) {
@@ -69,13 +108,15 @@ const PatientEMR = () => {
     const fetchPatientData = async () => {
         setIsLoading(true);
         try {
-            const [patientData, notesData, admissionsData] = await Promise.all([
-                DoctorService.getPatientDetails(patientId!),
-                DoctorService.getPatientClinicalNotes(patientId!),
-                DoctorService.getAdmissionsByPatient(patientId!)
-            ]);
-            setPatient(patientData);
-            setNotes(notesData);
+            const emrData = await DoctorService.getPatientFullEMR(patientId!);
+            setPatient(emrData.patientDetails);
+            setNotes(emrData.clinicalNotes || []);
+            setPrescriptions(emrData.prescriptions || []);
+            setLabReports(emrData.labReports || []);
+            setVitalsHistory(emrData.vitalsHistory || []);
+            
+            // Admissions are still fetched separately as they might not be in EMR response directly or mapped differently
+            const admissionsData = await DoctorService.getAdmissionsByPatient(patientId!);
             setAdmissions(admissionsData);
         } catch (error) {
             console.error("Failed to load patient EMR", error);
@@ -100,13 +141,45 @@ const PatientEMR = () => {
         try {
             const aptData = await DoctorService.getAppointmentDetails(appointmentId!);
             setAppointment(aptData);
-            if (aptData.status === 'SCHEDULED') {
+            if (aptData.status === 'SCHEDULED' || aptData.status === 'CHECKED_IN') {
                 // Auto transition to IN_PROGRESS when doctor opens the visit
                 await DoctorService.updateAppointment(aptData.id, { status: 'IN_PROGRESS' });
                 setAppointment({ ...aptData, status: 'IN_PROGRESS' });
             }
         } catch (error) {
             console.error("Failed to load appointment", error);
+        }
+    };
+
+    const handleDenyAppointment = async () => {
+        if (!appointmentId || !denyReason) return;
+        setIsSubmittingAction(true);
+        try {
+            await DoctorService.denyAppointment(appointmentId, denyReason);
+            alert("Appointment denied and returned to receptionist.");
+            navigate('/doctor/dashboard');
+        } catch (error) {
+            console.error("Failed to deny appointment", error);
+            alert("Failed to deny appointment.");
+        } finally {
+            setIsSubmittingAction(false);
+            setIsDenyModalOpen(false);
+        }
+    };
+
+    const handleTransferAppointment = async () => {
+        if (!appointmentId || !transferDept) return;
+        setIsSubmittingAction(true);
+        try {
+            await DoctorService.transferAppointment(appointmentId, transferDept, transferDoctorId || undefined, transferReason || undefined);
+            alert(`Appointment transferred to ${transferDept} department.`);
+            navigate('/doctor/dashboard');
+        } catch (error) {
+            console.error("Failed to transfer appointment", error);
+            alert("Failed to transfer appointment.");
+        } finally {
+            setIsSubmittingAction(false);
+            setIsTransferModalOpen(false);
         }
     };
 
@@ -188,6 +261,27 @@ const PatientEMR = () => {
         }
     };
 
+    const handleRequestAdmission = async () => {
+        if (!patientId) return;
+        setIsSubmittingAdmission(true);
+        try {
+            await DoctorService.requestAdmission({
+                patientId,
+                reasonForAdmission: `${admissionReason} (${admissionCareLevel})`,
+                urgencyLevel: admissionUrgency,
+                department: admissionDepartment
+            });
+            alert("Admission requested successfully. Receptionist notified.");
+            setIsAdmissionModalOpen(false);
+            fetchPatientData(); // Refresh history
+        } catch (error) {
+            console.error("Failed to request admission", error);
+            alert("Failed to request admission.");
+        } finally {
+            setIsSubmittingAdmission(false);
+        }
+    };
+
     const filteredMedicines = medicines.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const formatDate = (isoString?: string) => {
@@ -226,6 +320,12 @@ const PatientEMR = () => {
                     <div className="status-badge-sm status-active" style={{ fontSize: '0.9rem', padding: '0.4rem 1rem' }}>
                         Active Visit • {formatTime(appointment.appointmentTime)}
                     </div>
+                )}
+                {!appointment && (
+                     <button className="btn-primary" onClick={() => setIsAdmissionModalOpen(true)} style={{ backgroundColor: 'var(--warning)', color: 'white' }}>
+                        <Bed size={18} style={{ marginRight: '0.5rem' }} />
+                        Request Admission
+                    </button>
                 )}
             </div>
 
@@ -272,7 +372,7 @@ const PatientEMR = () => {
                                             <div className="timeline-content" style={{ borderColor: '#FDE68A' }}>
                                                 <div className="timeline-header">
                                                     <h4>Hospital Admission</h4>
-                                                    <span className="doctor-tag" style={{ background: '#FEF3C7', borderColor: '#FDE68A', color: '#B45309' }}>Dr. {adm.admittingDoctorName}</span>
+                                                    <span className="doctor-tag" style={{ background: '#FEF3C7', borderColor: '#FDE68A', color: '#B45309' }}>{formatDoctorName(adm.admittingDoctorName)}</span>
                                                 </div>
                                                 <div className="soap-block">
                                                     <div className="soap-item"><strong>Reason:</strong> {adm.reasonForAdmission}</div>
@@ -305,7 +405,7 @@ const PatientEMR = () => {
                                             <div className="timeline-content">
                                                 <div className="timeline-header">
                                                     <h4>Visit Notes</h4>
-                                                    <span className="doctor-tag">Dr. {note.doctorName}</span>
+                                                    <span className="doctor-tag">{formatDoctorName(note.doctorName)}</span>
                                                 </div>
                                                 <div className="soap-block">
                                                     <div className="soap-item"><strong>S:</strong> {note.subjective}</div>
@@ -318,6 +418,71 @@ const PatientEMR = () => {
                                                         <Calendar size={14} /> Follow up: {formatDate(note.followUpDate)}
                                                     </div>
                                                 )}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {prescriptions.map(presc => (
+                                        <div key={presc.id} className="timeline-entry" style={{ borderLeft: '3px solid #10B981', paddingLeft: '1rem', marginLeft: '20px' }}>
+                                            <div className="timeline-date" style={{ background: '#D1FAE5', color: '#047857' }}>
+                                                <div className="month">{new Date(presc.createdAt).toLocaleString('default', { month: 'short' })}</div>
+                                                <div className="day">{new Date(presc.createdAt).getDate()}</div>
+                                                <div className="year">{new Date(presc.createdAt).getFullYear()}</div>
+                                            </div>
+                                            <div className="timeline-content" style={{ borderColor: '#A7F3D0' }}>
+                                                <div className="timeline-header">
+                                                    <h4>Prescription</h4>
+                                                    <span className="doctor-tag" style={{ background: '#D1FAE5', color: '#047857' }}>{formatDoctorName(presc.doctorName)}</span>
+                                                </div>
+                                                <div className="soap-block">
+                                                    <div className="soap-item"><strong>Medicine:</strong> {presc.medicineName}</div>
+                                                    <div className="soap-item"><strong>Dosage:</strong> {presc.dosage} • {presc.frequency} for {presc.duration}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {labReports.map(lab => (
+                                        <div key={lab.id} className="timeline-entry" style={{ borderLeft: '3px solid #3B82F6', paddingLeft: '1rem', marginLeft: '20px' }}>
+                                            <div className="timeline-date" style={{ background: '#DBEAFE', color: '#1E40AF' }}>
+                                                <div className="month">{new Date(lab.requestedAt).toLocaleString('default', { month: 'short' })}</div>
+                                                <div className="day">{new Date(lab.requestedAt).getDate()}</div>
+                                                <div className="year">{new Date(lab.requestedAt).getFullYear()}</div>
+                                            </div>
+                                            <div className="timeline-content" style={{ borderColor: '#BFDBFE' }}>
+                                                <div className="timeline-header">
+                                                    <h4>Lab Test Request</h4>
+                                                    <span className="status-badge-sm" style={{ fontSize: '0.7rem' }}>{lab.status}</span>
+                                                </div>
+                                                <div className="soap-block">
+                                                    <div className="soap-item"><strong>Test:</strong> {lab.testType}</div>
+                                                    <div className="soap-item"><strong>Priority:</strong> {lab.priority}</div>
+                                                    {lab.notes && <div className="soap-item"><strong>Notes:</strong> {lab.notes}</div>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {vitalsHistory.map(v => (
+                                        <div key={v.id} className="timeline-entry" style={{ borderLeft: '3px solid #EF4444', paddingLeft: '1rem', marginLeft: '20px' }}>
+                                            <div className="timeline-date" style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                                                <div className="month">{new Date(v.recordedAt).toLocaleString('default', { month: 'short' })}</div>
+                                                <div className="day">{new Date(v.recordedAt).getDate()}</div>
+                                                <div className="year">{new Date(v.recordedAt).getFullYear()}</div>
+                                            </div>
+                                            <div className="timeline-content" style={{ borderColor: '#FECACA' }}>
+                                                <div className="timeline-header">
+                                                    <h4>Vitals Recorded</h4>
+                                                    <Thermometer size={14} className="text-danger" />
+                                                </div>
+                                                <div className="info-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                                                    <div className="info-item"><span className="info-label">BP</span><span className="info-value">{v.bloodPressure}</span></div>
+                                                    <div className="info-item"><span className="info-label">HR</span><span className="info-value">{v.heartRate}</span></div>
+                                                    <div className="info-item"><span className="info-label">SpO2</span><span className="info-value">{v.oxygenSaturation}%</span></div>
+                                                    <div className="info-item"><span className="info-label">Temp</span><span className="info-value">{v.temperature}°F</span></div>
+                                                    <div className="info-item"><span className="info-label">Height</span><span className="info-value">{v.height}cm</span></div>
+                                                    <div className="info-item"><span className="info-label">Weight</span><span className="info-value">{v.weight}kg</span></div>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -336,6 +501,14 @@ const PatientEMR = () => {
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                     Reason: {appointment?.reasonForVisit || 'General Consultation'}
                                 </p>
+                                <div className="action-buttons-top" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                                    <button className="btn-action-small danger" onClick={() => setIsDenyModalOpen(true)}>
+                                        <Ban size={14} /> Deny Patient
+                                    </button>
+                                    <button className="btn-action-small warning" onClick={() => setIsTransferModalOpen(true)}>
+                                        <Share2 size={14} /> Transfer Case
+                                    </button>
+                                </div>
                             </div>
                             <div className="panel-body">
                                 <h4>SOAP Notes</h4>
@@ -482,6 +655,17 @@ const PatientEMR = () => {
                                         >
                                             {isSubmittingPrescription ? 'Completing...' : 'Complete Visit & Send Orders'}
                                         </button>
+                                        <button
+                                            className="btn-secondary"
+                                            style={{ width: '100%', marginTop: '1rem', border: '1px solid var(--warning)', color: 'var(--warning)' }}
+                                            onClick={() => {
+                                                setAdmissionReason(assessment || subjective);
+                                                setIsAdmissionModalOpen(true);
+                                            }}
+                                        >
+                                            <Bed size={18} style={{ marginRight: '0.5rem' }} />
+                                            Request Hospital Admission
+                                        </button>
                                     </div>
                                 </div>
 
@@ -497,8 +681,171 @@ const PatientEMR = () => {
                 </div>
             </div>
 
+            {/* Admission Request Modal */}
+            {isAdmissionModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '500px' }}>
+                        <div className="modal-header">
+                            <h3>Request Inpatient Admission</h3>
+                            <button className="btn-icon" onClick={() => setIsAdmissionModalOpen(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '1.5rem' }}>
+                            <div className="form-group">
+                                <label>Reason for Admission</label>
+                                <textarea 
+                                    className="form-control" 
+                                    rows={3} 
+                                    value={admissionReason} 
+                                    onChange={(e) => setAdmissionReason(e.target.value)}
+                                    placeholder="Enter clinical reason for admission..."
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Urgency Level</label>
+                                <select className="form-control" value={admissionUrgency} onChange={(e) => setAdmissionUrgency(e.target.value)}>
+                                    <option value="ROUTINE">Routine</option>
+                                    <option value="URGENT">Urgent</option>
+                                    <option value="EMERGENCY">Emergency</option>
+                                    <option value="CRITICAL">Critical</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Preferred Department / Ward</label>
+                                <input 
+                                    type="text" 
+                                    className="form-control" 
+                                    value={admissionDepartment} 
+                                    onChange={(e) => setAdmissionDepartment(e.target.value)}
+                                    placeholder="e.g., General Medicine, Cardiology..."
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Care Level Required</label>
+                                <select className="form-control" value={admissionCareLevel} onChange={(e) => setAdmissionCareLevel(e.target.value)}>
+                                    <option value="GENERAL">General Ward</option>
+                                    <option value="ICU">ICU (Intensive Care Unit)</option>
+                                    <option value="HDU">HDU (High Dependency Unit)</option>
+                                    <option value="VENTILATOR">Ventilator Support Required</option>
+                                    <option value="ISOLATION">Isolation Ward</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn-secondary" onClick={() => setIsAdmissionModalOpen(false)}>Cancel</button>
+                            <button 
+                                className="btn-primary" 
+                                style={{ backgroundColor: 'var(--warning)', borderColor: 'var(--warning)' }}
+                                onClick={handleRequestAdmission}
+                                disabled={isSubmittingAdmission || !admissionReason}
+                            >
+                                {isSubmittingAdmission ? 'Submitting...' : 'Confirm Admission Request'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Deny Appointment Modal */}
+            {isDenyModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '400px' }}>
+                        <div className="modal-header" style={{ borderBottom: '1px solid var(--danger-light)' }}>
+                            <h3 style={{ color: 'var(--danger)' }}>Deny Consultation</h3>
+                            <button className="btn-icon" onClick={() => setIsDenyModalOpen(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '1.5rem' }}>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                                Are you sure you want to deny this patient? This will return the appointment to the receptionist's triage queue.
+                            </p>
+                            <div className="form-group">
+                                <label>Reason for Denial</label>
+                                <textarea 
+                                    className="form-control" 
+                                    rows={3} 
+                                    value={denyReason} 
+                                    onChange={(e) => setDenyReason(e.target.value)}
+                                    placeholder="Mention why you are denying (e.g., Case more suited for Cardiology)..."
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn-secondary" onClick={() => setIsDenyModalOpen(false)}>Cancel</button>
+                            <button 
+                                className="btn-primary" 
+                                style={{ backgroundColor: 'var(--danger)', borderColor: 'var(--danger)' }}
+                                onClick={handleDenyAppointment}
+                                disabled={isSubmittingAction || !denyReason}
+                            >
+                                {isSubmittingAction ? 'Processing...' : 'Confirm Denial'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Transfer Appointment Modal */}
+            {isTransferModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '450px' }}>
+                        <div className="modal-header" style={{ borderBottom: '1px solid var(--warning-light)' }}>
+                            <h3 style={{ color: 'var(--warning)' }}>Transfer Patient</h3>
+                            <button className="btn-icon" onClick={() => setIsTransferModalOpen(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '1.5rem' }}>
+                            <div className="form-group">
+                                <label>Target Department</label>
+                                <input 
+                                    type="text" 
+                                    className="form-control" 
+                                    value={transferDept} 
+                                    onChange={(e) => setTransferDept(e.target.value)}
+                                    placeholder="e.g., Neurology, Pediatrics..."
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Doctor Name (Optional)</label>
+                                <input 
+                                    type="text" 
+                                    className="form-control" 
+                                    value={transferDoctorId} 
+                                    onChange={(e) => setTransferDoctorId(e.target.value)}
+                                    placeholder="Enter Doctor Name if known..."
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Notes for Receptionist</label>
+                                <textarea 
+                                    className="form-control" 
+                                    rows={2} 
+                                    value={transferReason} 
+                                    onChange={(e) => setTransferReason(e.target.value)}
+                                    placeholder="Instructions for transfer..."
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn-secondary" onClick={() => setIsTransferModalOpen(false)}>Cancel</button>
+                            <button 
+                                className="btn-primary" 
+                                style={{ backgroundColor: 'var(--warning)', borderColor: 'var(--warning)', color: 'white' }}
+                                onClick={handleTransferAppointment}
+                                disabled={isSubmittingAction || !transferDept}
+                            >
+                                {isSubmittingAction ? 'Transferring...' : 'Confirm Transfer'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>
                 {`
+                    .btn-action-small { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+                    .btn-action-small.danger { background: #FEE2E2; color: #DC2626; border-color: #FECACA; }
+                    .btn-action-small.danger:hover { background: #DC2626; color: white; }
+                    .btn-action-small.warning { background: #FEF3C7; color: #D97706; border-color: #FDE68A; }
+                    .btn-action-small.warning:hover { background: #D97706; color: white; }
+                    
                     .emr-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
                     @media (max-width: 1024px) { .emr-layout { grid-template-columns: 1fr; } }
                     
