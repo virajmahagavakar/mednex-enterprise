@@ -70,8 +70,7 @@ public class IpdService {
         log.info("Fetching beds for ward {}", wardId);
         return bedRepository.findByWardId(wardId).stream().map(bed -> BedDTO.builder()
                 .id(bed.getId())
-                .wardId(bed.getWard().getId())
-                .roomNumber(bed.getRoomNumber())
+                .roomId(bed.getRoom() != null ? bed.getRoom().getId() : null)
                 .bedNumber(bed.getBedNumber())
                 .status(bed.getStatus())
                 .build()).collect(Collectors.toList());

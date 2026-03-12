@@ -23,6 +23,8 @@ public interface AdmissionRepository extends JpaRepository<Admission, UUID> {
 
     Optional<Admission> findTopByPatientIdAndStatusOrderByAdmissionDateDesc(UUID patientId, AdmissionStatus status);
 
+    Optional<Admission> findTopByCurrentBedIdAndStatusOrderByAdmissionDateDesc(UUID currentBedId, AdmissionStatus status);
+
     @Query("SELECT COUNT(a) FROM Admission a WHERE a.admittingDoctor.id = :doctorId AND a.status = :status")
     long countByAdmittingDoctorIdAndStatus(@Param("doctorId") UUID doctorId, @Param("status") AdmissionStatus status);
 

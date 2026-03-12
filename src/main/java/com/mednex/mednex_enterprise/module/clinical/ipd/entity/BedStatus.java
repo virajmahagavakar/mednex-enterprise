@@ -5,6 +5,7 @@ public enum BedStatus {
     RESERVED,
     OCCUPIED,
     DIRTY,
+    CLEANING_REQUIRED,
     CLEANING,
     MAINTENANCE,
     BLOCKED

@@ -40,7 +40,7 @@ public class MaintenanceTask {
     private LocalDate completedDate;
 
     @Column(columnDefinition = "TEXT")
-    private String notes;
+    private String issueDescription;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

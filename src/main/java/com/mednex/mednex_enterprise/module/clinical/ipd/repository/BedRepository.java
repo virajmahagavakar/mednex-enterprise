@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface BedRepository extends JpaRepository<Bed, UUID> {
     List<Bed> findByWardId(UUID wardId);
 
+    List<Bed> findByRoomId(UUID roomId);
+
     List<Bed> findByWardIdAndStatus(UUID wardId, BedStatus status);
 
     long countByWardIdAndStatus(UUID wardId, BedStatus status);

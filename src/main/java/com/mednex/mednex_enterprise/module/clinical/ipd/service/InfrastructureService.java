@@ -10,6 +10,9 @@ import com.mednex.mednex_enterprise.module.clinical.ipd.repository.BuildingRepos
 import com.mednex.mednex_enterprise.module.clinical.ipd.repository.FloorRepository;
 import com.mednex.mednex_enterprise.module.clinical.ipd.repository.RoomRepository;
 import com.mednex.mednex_enterprise.module.clinical.ipd.repository.WardRepository;
+import com.mednex.mednex_enterprise.core.entity.Branch;
+import com.mednex.mednex_enterprise.core.repository.BranchRepository;
+import com.mednex.mednex_enterprise.module.clinical.ipd.entity.Ward;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +33,17 @@ public class InfrastructureService {
     private final FloorRepository floorRepository;
     private final WardRepository wardRepository;
     private final RoomRepository roomRepository;
+    private final com.mednex.mednex_enterprise.core.repository.BranchRepository branchRepository;
 
     @Transactional
     public BuildingDTO createBuilding(BuildingDTO dto) {
         log.info("Creating building: {}", dto.getName());
+        com.mednex.mednex_enterprise.core.entity.Branch branch = branchRepository.findById(dto.getBranchId())
+            .orElseThrow(() -> new IllegalArgumentException("Branch not found"));
         Building building = Building.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
-                .branchId(dto.getBranchId())
+                .branch(branch)
                 .build();
         Building saved = buildingRepository.save(building);
         return mapToBuildingDTO(saved);
@@ -75,10 +81,12 @@ public class InfrastructureService {
     @Transactional
     public RoomDTO createRoom(RoomDTO dto) {
         log.info("Creating room {} in ward {}", dto.getRoomNumber(), dto.getWardId());
+        com.mednex.mednex_enterprise.module.clinical.ipd.entity.Ward ward = wardRepository.findById(dto.getWardId())
+            .orElseThrow(() -> new IllegalArgumentException("Ward not found"));
         Room room = Room.builder()
                 .roomNumber(dto.getRoomNumber())
                 .roomType(dto.getRoomType())
-                .wardId(dto.getWardId())
+                .ward(ward)
                 .status("CLEAN")
                 .build();
         Room saved = roomRepository.save(room);
@@ -90,7 +98,7 @@ public class InfrastructureService {
                 .id(building.getId())
                 .name(building.getName())
                 .description(building.getDescription())
-                .branchId(building.getBranchId())
+                .branchId(building.getBranch() != null ? building.getBranch().getId() : null)
                 .build();
     }
 
@@ -108,7 +116,7 @@ public class InfrastructureService {
                 .id(room.getId())
                 .roomNumber(room.getRoomNumber())
                 .roomType(room.getRoomType())
-                .wardId(room.getWardId())
+                .wardId(room.getWard() != null ? room.getWard().getId() : null)
                 .status(room.getStatus())
                 .build();
     }

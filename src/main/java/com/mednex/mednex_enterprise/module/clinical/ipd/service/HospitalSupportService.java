@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -66,7 +67,7 @@ public class HospitalSupportService {
         MaintenanceTask task = MaintenanceTask.builder()
                 .asset(asset)
                 .issueDescription(issueDescription)
-                .scheduledDate(LocalDateTime.now().plusDays(1))
+                .scheduledDate(LocalDate.now().plusDays(1))
                 .status("SCHEDULED")
                 .build();
         

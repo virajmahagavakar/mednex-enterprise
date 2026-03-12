@@ -29,11 +29,21 @@ public class CleaningTask {
     @JoinColumn(name = "assigned_to_id")
     private User assignedTo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requested_by_id")
+    private User requestedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cleaned_by_id")
+    private User cleanedBy;
+
+    private String priority;
+
     @Column(nullable = false)
     private String status; // PENDING, IN_PROGRESS, COMPLETED
 
     private LocalDateTime startTime;
-    private LocalDateTime completedTime;
+    private LocalDateTime completedAt;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
