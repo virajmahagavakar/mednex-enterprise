@@ -11,6 +11,10 @@ const Staff = () => {
   const [branches, setBranches] = useState<BranchResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Filters
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,14 +117,13 @@ const Staff = () => {
         </div>
 
         <div className="toolbar-filters">
-          <select className="select-filter">
+          <select className="select-filter" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
             <option value="">All Roles</option>
-            {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
           </select>
-          <select className="select-filter">
+          <select className="select-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="">All Statuses</option>
             <option value="ACTIVE">Active</option>
-            <option value="ONLEAVE">On Leave</option>
             <option value="INACTIVE">Inactive</option>
           </select>
         </div>
@@ -146,6 +149,13 @@ const Staff = () => {
             <tbody>
               {staff
                 .filter(person => !person.roles?.some(role => role.includes('ADMIN')))
+                .filter(person => !roleFilter || person.roles?.includes(roleFilter))
+                .filter(person => {
+                    if (!statusFilter) return true;
+                    if (statusFilter === 'ACTIVE') return person.active;
+                    if (statusFilter === 'INACTIVE') return !person.active;
+                    return true;
+                })
                 .map(person => (
                   <tr key={person.id}>
                     <td>

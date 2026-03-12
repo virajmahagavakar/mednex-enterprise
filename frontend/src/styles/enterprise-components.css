@@ -178,9 +178,46 @@
 .status-available { background: #DCFCE7; color: #166534; }
 .status-maintenance { background: #FEE2E2; color: #991B1B; }
 
+/* Modal Styles */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+    z-index: 50; display: flex; align-items: center; justify-content: center;
+    padding: 1rem; animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background-color: white; border-radius: var(--radius-lg);
+    width: 100%; max-width: 650px; max-height: 90vh;
+    display: flex; flex-direction: column; box-shadow: var(--shadow-xl);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    padding: 1.5rem; border-bottom: 1px solid var(--border-light);
+    display: flex; align-items: center; justify-content: space-between;
+}
+
+.modal-header h3 { margin: 0; font-size: 1.25rem; color: var(--text-primary); }
+
+.modal-body {
+    padding: 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 2rem;
+}
+
+.modal-footer {
+    padding: 1.5rem; border-top: 1px solid var(--border-light);
+    display: flex; justify-content: flex-end; gap: 1rem;
+    background-color: #FAFCFF; border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);
+}
+
 /* Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 

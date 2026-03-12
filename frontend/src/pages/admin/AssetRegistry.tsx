@@ -11,13 +11,28 @@ import {
     Activity, 
     Wrench, 
     Calendar,
-    Settings
+    Settings,
+    X
 } from 'lucide-react';
 
 const AssetRegistry: React.FC = () => {
     const [assets, setAssets] = useState<MedicalAssetDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    
+    // Modal state
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [newAssetFormData, setNewAssetFormData] = useState<Partial<MedicalAssetDTO>>({
+        name: '',
+        assetType: 'MONITOR',
+        serialNumber: '',
+        manufacturer: '',
+        purchaseDate: new Date().toISOString().split('T')[0],
+        status: 'AVAILABLE',
+        currentLocationType: 'STORAGE',
+        currentLocationId: 'main-storage'
+    });
 
     useEffect(() => {
         // Mock data for initial view
@@ -48,6 +63,36 @@ const AssetRegistry: React.FC = () => {
         setLoading(false);
     }, []);
 
+    const handleRegisterAsset = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            // Need to pass it a branchId, assume main for now if admin
+            const newAssetData = { ...newAssetFormData, branchId: localStorage.getItem('branchId') || '' };
+            const registeredAsset = await InfrastructureService.registerAsset(newAssetData);
+            
+            // Add to list
+            setAssets([...assets, registeredAsset]);
+            
+            setIsAddModalOpen(false);
+            setNewAssetFormData({
+                name: '',
+                assetType: 'MONITOR',
+                serialNumber: '',
+                manufacturer: '',
+                purchaseDate: new Date().toISOString().split('T')[0],
+                status: 'AVAILABLE',
+                currentLocationType: 'STORAGE',
+                currentLocationId: 'main-storage'
+            });
+        } catch (error) {
+            console.error("Failed to register asset", error);
+            alert("Failed to register asset. Ensure you have the right permissions.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const filteredAssets = assets.filter(a => 
         a.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         a.serialNumber.toLowerCase().includes(searchQuery.toLowerCase())
@@ -64,7 +109,7 @@ const AssetRegistry: React.FC = () => {
                     <p>Lifecycle tracking and maintenance management for medical equipment</p>
                 </div>
                 
-                <button className="btn-primary">
+                <button className="btn-primary" onClick={() => setIsAddModalOpen(true)}>
                     <Plus size={20} />
                     Register New Asset
                 </button>
@@ -131,6 +176,62 @@ const AssetRegistry: React.FC = () => {
                 <div className="empty-state" style={{ padding: '4rem', textAlign: 'center', background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border)' }}>
                     <Monitor size={48} style={{ color: 'var(--text-tertiary)', marginBottom: '1rem' }} />
                     <p style={{ color: 'var(--text-secondary)' }}>No assets found matching your criteria</p>
+                </div>
+            )}
+
+            {/* Register Asset Modal */}
+            {isAddModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h3>Register New Asset</h3>
+                            <button type="button" className="icon-btn" onClick={() => setIsAddModalOpen(false)}><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleRegisterAsset}>
+                            <div className="modal-body">
+                                <div className="input-row">
+                                    <div className="input-group">
+                                        <label>Asset Name *</label>
+                                        <input type="text" required className="input-field" value={newAssetFormData.name} onChange={e => setNewAssetFormData({ ...newAssetFormData, name: e.target.value })} />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Serial Number *</label>
+                                        <input type="text" required className="input-field" value={newAssetFormData.serialNumber} onChange={e => setNewAssetFormData({ ...newAssetFormData, serialNumber: e.target.value })} />
+                                    </div>
+                                </div>
+                                
+                                <div className="input-row">
+                                    <div className="input-group">
+                                        <label>Asset Type *</label>
+                                        <select required className="input-field" value={newAssetFormData.assetType} onChange={e => setNewAssetFormData({ ...newAssetFormData, assetType: e.target.value as any })}>
+                                            <option value="MONITOR">Monitor</option>
+                                            <option value="VENTILATOR">Ventilator</option>
+                                            <option value="DEFIBRILLATOR">Defibrillator</option>
+                                            <option value="INFUSION_PUMP">Infusion Pump</option>
+                                            <option value="ULTRASOUND">Ultrasound</option>
+                                            <option value="XRAY">X-Ray Machine</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Manufacturer *</label>
+                                        <input type="text" required className="input-field" value={newAssetFormData.manufacturer} onChange={e => setNewAssetFormData({ ...newAssetFormData, manufacturer: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div className="input-group">
+                                    <label>Purchase Date *</label>
+                                    <input type="date" required className="input-field" value={newAssetFormData.purchaseDate} onChange={e => setNewAssetFormData({ ...newAssetFormData, purchaseDate: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn-outline" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
+                                <button type="submit" className="btn-primary" disabled={isSubmitting || !newAssetFormData.name}>
+                                    {isSubmitting ? 'Registering...' : 'Register Asset'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

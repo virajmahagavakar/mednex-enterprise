@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import AdminLayout from './components/admin/AdminLayout';
 import Branches from './pages/admin/Branches';
 import Staff from './pages/admin/Staff';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import Subscription from './pages/admin/Subscription';
 import InfrastructureManager from './pages/admin/InfrastructureManager';
 import AssetRegistry from './pages/admin/AssetRegistry';
@@ -63,7 +64,7 @@ function App() {
         {/* Admin Console Routes */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<div style={{ padding: '2rem' }}><h2>Dashboard Coming Soon</h2></div>} />
+          <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="branches" element={<Branches />} />
           <Route path="staff" element={<Staff />} />
           <Route path="subscription" element={<Subscription />} />
