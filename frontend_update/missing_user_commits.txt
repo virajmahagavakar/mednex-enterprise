@@ -1,0 +1,6 @@
+2026-03-11 13:30:43 +0530 | 71a77a4 | feat: consolidate frontend and backend into monorepo structure
+2026-03-09 19:34:50 +0530 | 9e0af99 | ambulance module, ipd module, ward & bed management, UI improvements
+2026-03-08 01:47:39 +0530 | a2b6c4b | fix: patient profile auth + dashboard updates
+2026-03-06 22:54:36 +0530 | 7ba492f | Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+2026-03-03 19:25:32 +0530 | 4939ea9 | Add patient role migration, DTO, and update patient & appointment services
+2026-03-01 00:36:01 +0530 | c5bedd0 | Implement profile and subscription management with multitenant schema updates

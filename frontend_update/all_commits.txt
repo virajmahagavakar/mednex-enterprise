@@ -1,0 +1,59 @@
+* da4e24b feat(admin): enhance admin dashboard and UI components
+* fa57e8d feat(ipd): enhance infrastructure services and IPD entities
+* b164496 feat: implement Phase 4 Advanced Infrastructure and Asset Management (The Matrix 2.0)
+| * 71a77a4 feat: consolidate frontend and backend into monorepo structure
+|/  
+* ec8f77c ambulance module, ipd module, ward & bed management, UI improvements
+*   334cf7a updated ward and bed management
+|\  
+* | bef47f1 update appointment workflow
+| | * 9e0af99 ambulance module, ipd module, ward & bed management, UI improvements
+| |/  
+| * 004ae86 Fix API errors, add transactional services, implement doctor dashboard improvements and ambulance module
+| *   21a9d7d Add 'frontend/' from commit '7de7ad01950c936122b7d5bcbf9c3b8ad1412f0a'
+| |\  
+| | * 7de7ad0 refactor: clean duplicate backend/frontend structure and update UI modules
+| |/  
+|/|   
+| * 8c3d505 refactor: remove frontend from backend repo and update appointment triage module
+| * 5e55231 chore: remove duplicate frontend and build artifacts
+| * 9a1ab79 feat: add clinical appointment backend module (controllers, DTOs, services, entities)
+| * b2a69da feat: overhaul medical records ui + fix patient appointment booking patient lookup
+| * 92c5205 fix: patient profile auth + dashboard updates
+|/  
+* 6ccaaad fix: patient profile auth + dashboard updates
+| * a2b6c4b fix: patient profile auth + dashboard updates
+|/  
+* 45ae8d7 chore: clean up root — remove stray files, build artifacts, IDE files and misplaced frontend files
+* 72d0a64 feat: add React+Vite frontend (multi-portal HMS UI)
+* 7b36e1f Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+*   99f531b frontend dashboard ui implementation
+|\  
+* | 0f89eaf frontend dashboard ui implementation
+| | * 7ba492f Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+| |/  
+| * fdb8bb3 added pharmacy module
+| * 77d2c76 Add patient profile DTOs and update patient service & auth integration
+| * 3cbd576 Add patient role migration, DTO, and update patient & appointment services
+|/  
+*   d33cbd0 dr module setup,staff onboarding implementation,ui fixes
+|\  
+* | f664338 dr module setup,staff onboarding implementation,ui fixes
+| | * 4939ea9 Add patient role migration, DTO, and update patient & appointment services
+| |/  
+| * 7197cb5 Update gitignore and remove build artifacts,added dr nurse , patient module
+| * 299a6d1 Add branch admin role, subscription module, and profile management
+| * 4c0d356 Implement profile and subscription management with multitenant schema updates
+|/  
+* 876abfc branch and staff onboarding implementation
+* 4735867 frontend setup login and registration flow
+*   9e3ea8c frontend upload
+|\  
+* | 648767f frontend upload
+ /  
+| * c5bedd0 Implement profile and subscription management with multitenant schema updates
+|/  
+* b97c211 Major refactor: restructure auth, multitenancy and onboarding modules; removed legacy tenant package
+* e570263 Refactor JPA configs, remove deprecated naming strategy, add tenant Branch module, cleanup registration controller
+* 77291f3 Initial multitenant architecture setup for Mednex Enterprise
+* e86d22c first commit

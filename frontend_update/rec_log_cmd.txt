@@ -1,0 +1,27 @@
+ 8c3d505 - Viraj: refactor: remove frontend from backend repo and update appointment triage module
+ 5e55231 - Viraj: chore: remove duplicate frontend and build artifacts
+ 9a1ab79 - Viraj: feat: add clinical appointment backend module (controllers, DTOs, services, entities)
+ b2a69da - Viraj: feat: overhaul medical records ui + fix patient appointment booking patient lookup
+ 92c5205 - Viraj: fix: patient profile auth + dashboard updates
+ 6ccaaad - Viraj Mahagavakar: fix: patient profile auth + dashboard updates
+ 45ae8d7 - Viraj: chore: clean up root — remove stray files, build artifacts, IDE files and misplaced frontend files
+ 72d0a64 - Viraj: feat: add React+Vite frontend (multi-portal HMS UI)
+ 7b36e1f - Viraj: Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+ 99f531b - neha112004: frontend dashboard ui implementation
+ 0f89eaf - neha112004: frontend dashboard ui implementation
+ fdb8bb3 - Viraj: added pharmacy module
+ 77d2c76 - Viraj: Add patient profile DTOs and update patient service & auth integration
+ 3cbd576 - Viraj: Add patient role migration, DTO, and update patient & appointment services
+ d33cbd0 - neha112004: dr module setup,staff onboarding implementation,ui fixes
+ 7197cb5 - Viraj: Update gitignore and remove build artifacts,added dr nurse , patient module
+ f664338 - neha112004: dr module setup,staff onboarding implementation,ui fixes
+ 299a6d1 - Viraj: Add branch admin role, subscription module, and profile management
+ 4c0d356 - Viraj: Implement profile and subscription management with multitenant schema updates
+ 876abfc - neha112004: branch and staff onboarding implementation
+ 4735867 - neha112004: frontend setup login and registration flow
+ 9e3ea8c - neha112004: frontend upload
+ 648767f - neha112004: frontend upload
+ b97c211 - Viraj: Major refactor: restructure auth, multitenancy and onboarding modules; removed legacy tenant package
+ e570263 - Viraj: Refactor JPA configs, remove deprecated naming strategy, add tenant Branch module, cleanup registration controller
+ 77291f3 - Viraj: Initial multitenant architecture setup for Mednex Enterprise
+ e86d22c - Viraj: first commit

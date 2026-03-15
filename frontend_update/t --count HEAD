@@ -1,0 +1,45 @@
+* [33mda4e24b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m feat(admin): enhance admin dashboard and UI components
+* [33mfa57e8d[m feat(ipd): enhance infrastructure services and IPD entities
+* [33mb164496[m feat: implement Phase 4 Advanced Infrastructure and Asset Management (The Matrix 2.0)
+* [33mec8f77c[m ambulance module, ipd module, ward & bed management, UI improvements
+*   [33m334cf7a[m updated ward and bed management
+[32m|[m[33m\[m  
+[32m|[m * [33m004ae86[m Fix API errors, add transactional services, implement doctor dashboard improvements and ambulance module
+[32m|[m *   [33m21a9d7d[m Add 'frontend/' from commit '7de7ad01950c936122b7d5bcbf9c3b8ad1412f0a'
+[32m|[m [34m|[m[35m\[m  
+[32m|[m [34m|[m * [33m7de7ad0[m refactor: clean duplicate backend/frontend structure and update UI modules
+[32m|[m * [35m|[m [33m8c3d505[m refactor: remove frontend from backend repo and update appointment triage module
+[32m|[m * [35m|[m [33m5e55231[m chore: remove duplicate frontend and build artifacts
+[32m|[m * [35m|[m [33m9a1ab79[m feat: add clinical appointment backend module (controllers, DTOs, services, entities)
+[32m|[m * [35m|[m [33mb2a69da[m feat: overhaul medical records ui + fix patient appointment booking patient lookup
+[32m|[m * [35m|[m [33m92c5205[m fix: patient profile auth + dashboard updates
+[32m|[m [35m|[m[35m/[m  
+* [35m/[m [33mbef47f1[m update appointment workflow
+[35m|[m[35m/[m  
+* [33m6ccaaad[m fix: patient profile auth + dashboard updates
+* [33m45ae8d7[m chore: clean up root — remove stray files, build artifacts, IDE files and misplaced frontend files
+* [33m72d0a64[m feat: add React+Vite frontend (multi-portal HMS UI)
+* [33m7b36e1f[m Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+*   [33m99f531b[m frontend dashboard ui implementation
+[36m|[m[1;31m\[m  
+[36m|[m * [33mfdb8bb3[m added pharmacy module
+[36m|[m * [33m77d2c76[m Add patient profile DTOs and update patient service & auth integration
+[36m|[m * [33m3cbd576[m Add patient role migration, DTO, and update patient & appointment services
+* [1;31m|[m [33m0f89eaf[m frontend dashboard ui implementation
+[1;31m|[m[1;31m/[m  
+*   [33md33cbd0[m dr module setup,staff onboarding implementation,ui fixes
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * [33m7197cb5[m Update gitignore and remove build artifacts,added dr nurse , patient module
+[1;32m|[m * [33m299a6d1[m Add branch admin role, subscription module, and profile management
+[1;32m|[m * [33m4c0d356[m Implement profile and subscription management with multitenant schema updates
+* [1;33m|[m [33mf664338[m dr module setup,staff onboarding implementation,ui fixes
+[1;33m|[m[1;33m/[m  
+* [33m876abfc[m branch and staff onboarding implementation
+* [33m4735867[m frontend setup login and registration flow
+*   [33m9e3ea8c[m frontend upload
+[1;34m|[m[1;35m\[m  
+[1;34m|[m * [33mb97c211[m Major refactor: restructure auth, multitenancy and onboarding modules; removed legacy tenant package
+[1;34m|[m * [33me570263[m Refactor JPA configs, remove deprecated naming strategy, add tenant Branch module, cleanup registration controller
+[1;34m|[m * [33m77291f3[m Initial multitenant architecture setup for Mednex Enterprise
+[1;34m|[m * [33me86d22c[m first commit
+* [33m648767f[m frontend upload
