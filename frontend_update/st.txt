@@ -1,0 +1,8 @@
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/entity/BedStatus.java
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/entity/CleaningTask.java
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/entity/MaintenanceTask.java
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/repository/AdmissionRepository.java
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/repository/BedRepository.java
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/service/HospitalSupportService.java
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/service/InfrastructureService.java
+ M src/main/java/com/mednex/mednex_enterprise/module/clinical/ipd/service/IpdService.java

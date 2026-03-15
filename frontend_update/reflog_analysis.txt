@@ -1,0 +1,20 @@
+da4e24b : 27 user commits : feat(admin): enhance admin dashboard and UI components
+fa57e8d : 26 user commits : feat(ipd): enhance infrastructure services and IPD entities
+71a77a4 : 25 user commits : feat: consolidate frontend and backend into monorepo structure
+b164496 : 25 user commits : feat: implement Phase 4 Advanced Infrastructure and Asset Management (The Matrix 2.0)
+ec8f77c : 24 user commits : ambulance module, ipd module, ward & bed management, UI improvements
+334cf7a : 23 user commits : updated ward and bed management
+9e0af99 : 22 user commits : ambulance module, ipd module, ward & bed management, UI improvements
+004ae86 : 21 user commits : Fix API errors, add transactional services, implement doctor dashboard improvements and ambulance module
+21a9d7d : 20 user commits : Add 'frontend/' from commit '7de7ad01950c936122b7d5bcbf9c3b8ad1412f0a'
+8c3d505 : 18 user commits : refactor: remove frontend from backend repo and update appointment triage module
+5e55231 : 17 user commits : chore: remove duplicate frontend and build artifacts
+9a1ab79 : 16 user commits : feat: add clinical appointment backend module (controllers, DTOs, services, entities)
+b2a69da : 15 user commits : feat: overhaul medical records ui + fix patient appointment booking patient lookup
+a2b6c4b : 14 user commits : fix: patient profile auth + dashboard updates
+92c5205 : 14 user commits : fix: patient profile auth + dashboard updates
+6ccaaad : 14 user commits : fix: patient profile auth + dashboard updates
+45ae8d7 : 13 user commits : chore: clean up root — remove stray files, build artifacts, IDE files and misplaced frontend files
+72d0a64 : 12 user commits : feat: add React+Vite frontend (multi-portal HMS UI)
+7b36e1f : 11 user commits : Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+7ba492f : 11 user commits : Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules

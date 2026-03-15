@@ -1,0 +1,43 @@
+da4e24b HEAD@{0}: commit: feat(admin): enhance admin dashboard and UI components
+fa57e8d HEAD@{1}: commit: feat(ipd): enhance infrastructure services and IPD entities
+b164496 HEAD@{2}: commit (amend): feat: implement Phase 4 Advanced Infrastructure and Asset Management (The Matrix 2.0)
+71a77a4 HEAD@{3}: commit: feat: consolidate frontend and backend into monorepo structure
+ec8f77c HEAD@{4}: rebase (finish): returning to refs/heads/main
+ec8f77c HEAD@{5}: rebase (continue): ambulance module, ipd module, ward & bed management, UI improvements
+334cf7a HEAD@{6}: pull origin main --rebase (start): checkout 334cf7a241a94eab5272c5f11937374dacfb7759
+9e0af99 HEAD@{7}: commit: ambulance module, ipd module, ward & bed management, UI improvements
+004ae86 HEAD@{8}: commit: Fix API errors, add transactional services, implement doctor dashboard improvements and ambulance module
+21a9d7d HEAD@{9}: reset: moving to 21a9d7dfe8a4ab549a7c71e39fb5e180f2412397
+8c3d505 HEAD@{10}: commit: refactor: remove frontend from backend repo and update appointment triage module
+5e55231 HEAD@{11}: commit: chore: remove duplicate frontend and build artifacts
+9a1ab79 HEAD@{12}: commit: feat: add clinical appointment backend module (controllers, DTOs, services, entities)
+b2a69da HEAD@{13}: reset: moving to b2a69da
+92c5205 HEAD@{14}: reset: moving to 92c5205
+b2a69da HEAD@{15}: commit: feat: overhaul medical records ui + fix patient appointment booking patient lookup
+92c5205 HEAD@{16}: pull origin main --rebase (finish): returning to refs/heads/main
+92c5205 HEAD@{17}: pull origin main --rebase (pick): fix: patient profile auth + dashboard updates
+6ccaaad HEAD@{18}: pull origin main --rebase (start): checkout 6ccaaadf9dcc2ff4bdc7e8e4e5d4b01d5dee5281
+a2b6c4b HEAD@{19}: commit: fix: patient profile auth + dashboard updates
+45ae8d7 HEAD@{20}: commit: chore: clean up root — remove stray files, build artifacts, IDE files and misplaced frontend files
+72d0a64 HEAD@{21}: commit: feat: add React+Vite frontend (multi-portal HMS UI)
+7b36e1f HEAD@{22}: pull origin main --rebase (finish): returning to refs/heads/main
+7b36e1f HEAD@{23}: pull origin main --rebase (pick): Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+99f531b HEAD@{24}: pull origin main --rebase (start): checkout 99f531bf982f5fb1a5fc0f44b430434c3392bd21
+7ba492f HEAD@{25}: commit: Add IPD, clinical notes, pharmacy prescriptions and expand clinical modules
+fdb8bb3 HEAD@{26}: commit: added pharmacy module
+77d2c76 HEAD@{27}: commit: Add patient profile DTOs and update patient service & auth integration
+3cbd576 HEAD@{28}: pull --rebase origin main (finish): returning to refs/heads/main
+3cbd576 HEAD@{29}: pull --rebase origin main (pick): Add patient role migration, DTO, and update patient & appointment services
+d33cbd0 HEAD@{30}: pull --rebase origin main (start): checkout d33cbd024ba85432400e7d38a483f9534979ba4a
+4939ea9 HEAD@{31}: commit: Add patient role migration, DTO, and update patient & appointment services
+7197cb5 HEAD@{32}: commit: Update gitignore and remove build artifacts,added dr nurse , patient module
+299a6d1 HEAD@{33}: commit: Add branch admin role, subscription module, and profile management
+4c0d356 HEAD@{34}: pull origin main --rebase (finish): returning to refs/heads/main
+4c0d356 HEAD@{35}: pull origin main --rebase (pick): Implement profile and subscription management with multitenant schema updates
+876abfc HEAD@{36}: pull origin main --rebase (start): checkout 876abfc446c55e1263cc90dae561558c0756be84
+c5bedd0 HEAD@{37}: commit: Implement profile and subscription management with multitenant schema updates
+b97c211 HEAD@{38}: commit: Major refactor: restructure auth, multitenancy and onboarding modules; removed legacy tenant package
+e570263 HEAD@{39}: commit: Refactor JPA configs, remove deprecated naming strategy, add tenant Branch module, cleanup registration controller
+77291f3 HEAD@{40}: commit: Initial multitenant architecture setup for Mednex Enterprise
+e86d22c HEAD@{41}: Branch: renamed refs/heads/master to refs/heads/main
+e86d22c HEAD@{43}: commit (initial): first commit
